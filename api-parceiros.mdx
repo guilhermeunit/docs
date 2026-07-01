@@ -62,10 +62,8 @@ entra depois que você já tem os dados e o consentimento do cliente:
 </Steps>
 
 <Note>
-  A formalização completa da proposta (dados complementares, assinatura
-  digital do contrato) ainda não faz parte desta versão da API — o cliente
-  finaliza esse trecho numa página hospedada pela Unit, para a qual você pode
-  direcioná-lo a partir da oferta escolhida.
+  A formalização completa da proposta ainda não faz parte desta versão da
+  API — veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta).
 </Note>
 
 ## Autenticação
@@ -209,6 +207,36 @@ externa do titular:
   bancos estão habilitados para você.
 </Note>
 
+<Warning>
+  Banco PAN ainda não faz parte do fluxo automatizado da API de Parceiros —
+  está em desenvolvimento. Ele aparece nesta tabela pelo modelo de
+  autorização, mas hoje não retorna oferta nem ação pendente por esta API.
+</Warning>
+
+## O que acontece depois da oferta
+
+Depois que o cliente escolhe uma oferta, a operação ainda precisa ser
+**formalizada com o banco** — e isso exige um segundo conjunto de dados, que
+a consulta de evidência (acima) não cobre:
+
+- Endereço completo (CEP, logradouro, número, bairro, cidade, UF)
+- Dados bancários ou chave PIX para o desembolso
+- Documento de identidade (RG, órgão emissor, data de emissão)
+- Estado civil
+- Dados de emprego e renda
+
+Cada banco tem um fluxo de formalização próprio, com requisitos e prazos
+diferentes entre si. Hoje essa etapa acontece numa experiência hospedada pela
+própria Unit — direcione o cliente para lá a partir da oferta escolhida (fale
+com o time de parceiros para obter o link de handoff). Uma API unificada de
+submissão está no roadmap.
+
+<Tip>
+  Se seu produto já coleta esses dados (endereço, dados bancários, documento),
+  avise o time de parceiros — isso ajuda a priorizar quais bancos entram
+  primeiro numa futura API de submissão.
+</Tip>
+
 ## Webhooks
 
 Para bancos assíncronos e para autorizações externas que se completam depois
@@ -221,12 +249,12 @@ configurada no cadastro do seu parceiro.
 {
   "partner_id": "sua-empresa",
   "external_reference": "12345678900",
-  "provider": "banco_pan",
+  "provider": "c6",
   "event": "authorization_result",
   "status": "approved",
   "offers": [
     {
-      "provider": "banco_pan",
+      "provider": "c6",
       "loan_value": 5000.00,
       "installment_value": 210.50,
       "installments": 36,
@@ -284,9 +312,11 @@ confirmação são reenviadas com backoff.
 
 ## Fora do escopo desta versão
 
-- **Formalização via API** — assinatura digital do contrato e coleta de
-  dados complementares ainda acontecem numa página hospedada pela Unit, não
-  pela API de Parceiros.
+- **Formalização via API** — veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta).
+  Assinatura digital do contrato e coleta de dados complementares ainda
+  acontecem numa página hospedada pela Unit, não pela API de Parceiros.
+- **Submissão automatizada do Banco PAN** — ainda em desenvolvimento; não
+  retorna oferta nem ação pendente por esta API hoje.
 - **Cobertura de bancos** — varia por parceiro; alguns bancos podem não estar
   disponíveis para todas as integrações.
 
