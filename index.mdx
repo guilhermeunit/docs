@@ -112,7 +112,7 @@ Há três formas de consultar, todas com o mesmo corpo de requisição:
 <CodeGroup>
 
 ```bash Agregada
-curl -X POST https://api.unit.com.br/partners/v1/consultas \
+curl -X POST https://api.somosunit.com.br/partners/v1/consultas \
   -H "X-Partner-Api-Key: <sua-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -128,7 +128,7 @@ curl -X POST https://api.unit.com.br/partners/v1/consultas \
 ```
 
 ```bash Streaming (SSE)
-curl -N -X POST https://api.unit.com.br/partners/v1/consultas/stream \
+curl -N -X POST https://api.somosunit.com.br/partners/v1/consultas/stream \
   -H "X-Partner-Api-Key: <sua-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -142,7 +142,7 @@ curl -N -X POST https://api.unit.com.br/partners/v1/consultas/stream \
 ```
 
 ```bash Individual
-curl -X POST https://api.unit.com.br/partners/v1/providers/c6/consultas \
+curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
   -H "X-Partner-Api-Key: <sua-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
