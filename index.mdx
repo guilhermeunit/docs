@@ -1,20 +1,514 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "API de Parceiros"
+description: "Integre seu produto à Unit e origine propostas de crédito consignado em múltiplos bancos com uma única chamada"
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+<Note>
+  A **fatia de consulta/cotação** desta API está **implementada e disponível**:
+  as rotas `/partners/v1/*`, a autenticação por parceiro e a seleção de bancos
+  descritas abaixo já estão no ar. A **formalização** da proposta (assinatura +
+  dados complementares) ainda acontece numa experiência hospedada pela Unit —
+  veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta). Para
+  obter credenciais (API key e configuração de webhook), fale com o time de
+  parceiros da Unit.
+</Note>
+
+## Visão geral
+
+Sua aplicação já coleta os dados do cliente e o consentimento dele. Em vez de
+integrar banco a banco, você faz **uma única chamada** para a Unit com os dados
+do titular e a evidência de autorização — a Unit decide, banco a banco, como
+rotear:
+
+```mermaid
+flowchart LR
+    A[Seu produto] -->|1 chamada: dados + evidência| B(API de Parceiros)
+    B --> C{Unit decide o roteamento}
+    C -->|banco aceita evidência via API| D[Consulta direta]
+    D --> F[Ofertas na resposta]
+    C -->|banco exige autorização externa| E[Link de ação ou webhook]
+    E --> G[Notificação assíncrona quando o cliente autoriza]
+```
+
+Você recebe, numa resposta só, o resultado de cada banco: as **ofertas** dos
+que aceitaram a evidência direto, e as **ações pendentes** (link de biometria,
+DATAPREV, etc.) dos que exigem uma autorização externa do titular — mais o
+**erro** ou o motivo, por banco, quando não houver oferta.
+
+## Como isso se encaixa no seu fluxo
+
+Você não precisa mudar a experiência do seu produto — a API de Parceiros entra
+depois que você já tem os dados e o consentimento do cliente:
+
+<Steps>
+  <Step title="Colete os dados do titular">
+    CPF, nome completo, data de nascimento, telefone e e-mail — o que você já
+    coleta hoje no seu onboarding.
+  </Step>
+  <Step title="Colete o consentimento e a evidência">
+    Apresente o termo de autorização para consulta de margem/vínculo no seu
+    produto e registre a evidência do aceite: IP do titular, geolocalização e o
+    momento do aceite.
+  </Step>
+  <Step title="Chame a API de Parceiros">
+    Envie os dados e a evidência para uma das rotas de consulta (abaixo). Numa
+    chamada só você consulta todos os bancos habilitados para a sua parceria —
+    ou um subconjunto, ou um banco específico.
+  </Step>
+  <Step title="Trate a resposta">
+    Mostre as ofertas retornadas. Para bancos que exigem autorização externa,
+    apresente o link de ação para o cliente completar (ex.: biometria).
+  </Step>
+  <Step title="Receba atualizações assíncronas (quando aplicável)">
+    Bancos assíncronos, ou autorizações externas concluídas depois da resposta
+    inicial, chegam via [webhook](#webhooks) — não é preciso ficar consultando
+    o status.
+  </Step>
+</Steps>
+
+## Autenticação
+
+Toda chamada usa uma API key exclusiva do seu parceiro, enviada no header:
+
+```
+X-Partner-Api-Key: <sua-api-key>
+```
+
+A Unit resolve a sua parceria a partir dessa key. Requisições sem a key, com
+key inválida ou com a parceria suspensa recebem **`401`**.
+
+<Warning>
+  Trate sua API key como um segredo — nunca a exponha em código
+  client-side/frontend. Todas as chamadas devem partir do seu backend.
+</Warning>
+
+## Bancos habilitados
+
+Quais bancos a sua integração pode consultar é definido em **duas camadas**:
+
+1. **Allowlist da parceria (fixo, no servidor).** Cada parceria tem uma lista
+   de bancos permitidos, definida no seu contrato. A Unit aplica esse limite
+   **sempre** — uma chamada nunca alcança um banco fora do seu allowlist.
+2. **Seleção por chamada (opcional, dentro do allowlist).** Em cada requisição
+   você pode restringir ainda mais quais bancos consultar, com o campo
+   `providers` (veja abaixo). Ausente, a consulta usa **todo** o seu allowlist.
+
+<Note>
+  A cobertura de bancos disponível para a sua integração depende do seu
+  contrato de parceria — confirme com o time de parceiros da Unit quais bancos
+  estão habilitados para você.
+</Note>
+
+## Enviando uma consulta
+
+Há três formas de consultar, todas com o mesmo corpo de requisição:
+
+| Rota | Uso |
+|---|---|
+| `POST /partners/v1/consultas` | **Agregada, síncrona.** Consulta os bancos em paralelo e devolve tudo quando terminam. |
+| `POST /partners/v1/consultas/stream` | **Agregada, streaming (SSE).** Emite o resultado de cada banco à medida que ele responde. |
+| `POST /partners/v1/providers/{name}/consultas` | **Individual.** Consulta um único banco (dentro do seu allowlist) e devolve um envelope só. |
+
+<CodeGroup>
+
+```bash Agregada
+curl -X POST https://api.somosunit.com.br/partners/v1/consultas \
+  -H "X-Partner-Api-Key: <sua-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cpf": "12345678900",
+    "nome": "Fulano de Tal",
+    "data_nascimento": "1990-01-31",
+    "telefone": "5511999998888",
+    "email": "fulano@example.com",
+    "client_ip": "200.0.0.1",
+    "geolocation": { "lat": -23.5, "lng": -46.6 },
+    "providers": ["unit", "c6"]
+  }'
+```
+
+```bash Streaming (SSE)
+curl -N -X POST https://api.somosunit.com.br/partners/v1/consultas/stream \
+  -H "X-Partner-Api-Key: <sua-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cpf": "12345678900",
+    "nome": "Fulano de Tal",
+    "data_nascimento": "1990-01-31",
+    "telefone": "5511999998888",
+    "email": "fulano@example.com",
+    "client_ip": "200.0.0.1"
+  }'
+```
+
+```bash Individual
+curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
+  -H "X-Partner-Api-Key: <sua-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cpf": "12345678900",
+    "nome": "Fulano de Tal",
+    "data_nascimento": "1990-01-31",
+    "telefone": "5511999998888",
+    "email": "fulano@example.com",
+    "client_ip": "200.0.0.1"
+  }'
+```
+
+</CodeGroup>
+
+### Corpo da requisição
+
+<ParamField body="cpf" type="string" required>
+  CPF do titular, apenas dígitos.
+</ParamField>
+
+<ParamField body="nome" type="string" required>
+  Nome completo do titular.
+</ParamField>
+
+<ParamField body="data_nascimento" type="string" required>
+  Data de nascimento no formato `YYYY-MM-DD`.
+</ParamField>
+
+<ParamField body="telefone" type="string" required>
+  Telefone do titular com DDI e DDD (ex.: `5511999998888`).
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  E-mail do titular.
+</ParamField>
+
+<ParamField body="client_ip" type="string" required>
+  IP do titular **no momento do aceite** — parte da evidência de autorização.
+  Como sua chamada é feita pelo seu backend, este campo precisa vir explícito: a
+  Unit não tem como inferir o IP do seu cliente a partir da sua infraestrutura.
+</ParamField>
+
+<ParamField body="geolocation" type="object">
+  Geolocalização do titular no momento do aceite — `{ "lat": number, "lng": number }`.
+  Recomendado; alguns bancos usam esse dado como parte da evidência.
+</ParamField>
+
+<ParamField body="providers" type="string[]">
+  Restringe esta chamada a um subconjunto dos bancos (ex.: `["unit", "c6"]`). O
+  resultado é sempre a **interseção** com o allowlist da sua parceria — pedir um
+  banco fora do allowlist não o inclui. Ausente, consulta todo o allowlist.
+  (Ignorado na rota individual, que já mira um banco pelo path.)
+</ParamField>
+
+<ParamField body="sexo" type="integer" default="0">
+  Sexo do titular, quando exigido por algum banco na simulação.
+</ParamField>
+
+<ParamField body="app_authorization" type="object">
+  Bloco opcional para elevar a força da evidência em bancos que aceitam
+  autorização "tipo app": `authorizationId`, `signatureDate` e um objeto
+  `evidence` com `userAgent`, `operationalSystem`, `deviceModel`, `deviceName`,
+  `deviceType` e `geoLocation`. Use se você já capturar esses dados de device na
+  sua própria integração.
+</ParamField>
+
+<ParamField body="originador" type="string">
+  Identificador de originação/atribuição, quando aplicável ao seu contrato.
+</ParamField>
+
+<ParamField body="loan_value" type="number">
+  Valor de empréstimo desejado, para direcionar a simulação. Opcional.
+</ParamField>
+
+<ParamField body="prazo" type="integer">
+  Prazo desejado (nº de parcelas), para direcionar a simulação. Opcional.
+</ParamField>
+
+<ParamField body="valor_parcela" type="number">
+  Valor de parcela desejado, para direcionar a simulação. Opcional.
+</ParamField>
+
+<ParamField body="with_insurance" type="boolean" default="true">
+  Inclui as opções com seguro na simulação.
+</ParamField>
+
+### Resposta — consulta agregada
+
+A rota agregada devolve, numa resposta só, as ofertas achatadas (ordenadas por
+valor) e o resultado detalhado por banco:
+
+```json
+{
+  "proposals": [
+    {
+      "provider": "c6",
+      "loanValue": 5000.00,
+      "installmentValue": 210.50,
+      "installments": 36,
+      "interestRate": 1.85,
+      "totalAmount": 7578.00,
+      "tableCode": "T-123",
+      "firstDueDate": "2026-08-05",
+      "employerName": "Empresa X",
+      "employerCnpj": "00000000000191",
+      "matricula": "998877"
+    }
+  ],
+  "providerResults": {
+    "c6": {
+      "provider": "c6",
+      "success": true,
+      "proposals": [ /* mesmas ofertas deste banco */ ],
+      "vinculos": [],
+      "error": null,
+      "elapsedMs": 1420,
+      "noProposalReasons": [],
+      "requiresSignature": false,
+      "signatureUrl": null,
+      "termAutoAuthorized": false
+    }
+  },
+  "employers": [],
+  "elapsedMs": 1620,
+  "timestamp": "2026-07-01T14:32:00Z",
+  "simulationGroupId": "a1b2c3"
+}
+```
+
+<ResponseField name="proposals" type="array">
+  Todas as ofertas de todos os bancos, achatadas e ordenadas por valor. Cada
+  oferta traz `provider`, `loanValue`, `installmentValue`, `installments`,
+  `interestRate`, `totalAmount` e detalhes do vínculo (`employerName`,
+  `employerCnpj`, `matricula`), além de `providerData` com campos específicos do
+  banco.
+</ResponseField>
+
+<ResponseField name="providerResults" type="object">
+  Resultado detalhado **por banco**, indexado pelo nome do banco. É onde você lê
+  o estado de cada um:
+  <ul>
+    <li>**Ofertas do banco** → `proposals`.</li>
+    <li>**Ação pendente** (autorização externa) → `requiresSignature: true` com
+      `signatureUrl`, e/ou `noProposalReasons` explicando o que falta.</li>
+    <li>**Erro / recusa** → `success: false` com `error`.</li>
+  </ul>
+</ResponseField>
+
+<ResponseField name="employers" type="array">
+  Vínculos empregatícios encontrados para o titular, quando aplicável.
+</ResponseField>
+
+<ResponseField name="elapsedMs" type="integer">
+  Tempo total da consulta agregada, em milissegundos.
+</ResponseField>
+
+<ResponseField name="simulationGroupId" type="string | null">
+  Identificador do grupo de simulação, quando a consulta persiste as ofertas.
+</ResponseField>
+
+### Resposta — streaming (SSE)
+
+A rota `/consultas/stream` responde `text/event-stream`: cada evento é uma linha
+`data: {json}\n\n` com uma chave `event`. Os bancos chegam à medida que
+respondem, sem esperar o mais lento:
+
+| `event` | Quando | Campos |
+|---|---|---|
+| `start` | início da consulta | `message` |
+| `provider_start` | um banco começou | `provider` |
+| `provider_result` | um banco respondeu | `provider`, `success`, `proposals`, `vinculos`, `error`, `elapsedMs`, `noProposalReasons`, `requiresSignature`, `signatureUrl` |
+| `provider_error` | um banco falhou de forma inesperada | `error` |
+| `complete` | todos terminaram | — |
+
+<Note>
+  O streaming entrega os resultados progressivos por banco, mas **não** dispara
+  os efeitos cross-provider da rota síncrona (webhooks de lead, persistência das
+  ofertas). Se você depende desses efeitos, use a rota agregada síncrona
+  (`POST /partners/v1/consultas`).
+</Note>
+
+### Resposta — consulta individual
+
+A rota individual devolve um único **envelope** do banco consultado (campos em
+`snake_case`):
+
+```json
+{
+  "provider": "c6",
+  "status": "requires_action",
+  "offers": [
+    {
+      "provider": "c6",
+      "loan_value": 5000.00,
+      "installment_value": 210.50,
+      "installments": 36,
+      "interest_rate": 1.85,
+      "total_amount": 7578.00,
+      "table_code": "T-123",
+      "first_due_date": "2026-08-05"
+    }
+  ],
+  "vinculos": [],
+  "proposal_id": null,
+  "action": { "type": "biometria", "url": "https://...", "detail": null },
+  "error": null,
+  "elapsed_ms": 1420,
+  "no_proposal_reasons": [],
+  "term_auto_authorized": false,
+  "provider_data": null
+}
+```
+
+<ResponseField name="status" type="string">
+  Estado normalizado do banco: `ok` (com oferta), `no_offers` (sem oferta),
+  `requires_action` (precisa de autorização externa), `pending` (fluxo
+  assíncrono em andamento) ou `error`.
+</ResponseField>
+
+<ResponseField name="offers" type="array">
+  Ofertas deste banco.
+</ResponseField>
+
+<ResponseField name="action" type="object | null">
+  Ação pendente quando `status: requires_action` — `type`
+  (`signature` | `biometria` | `dataprev` | `whatsapp_link` | `formalization`),
+  `url` (o link para o cliente completar) e `detail`.
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Motivo, quando o banco falhou ou recusou.
+</ResponseField>
+
+<Note>
+  Pedir um banco fora do seu allowlist retorna **`403`** (não `404` — a API não
+  revela se o banco existe). Um nome de banco desconhecido retorna `404`.
+</Note>
+
+## Modelo de autorização por banco
+
+Nem todos os bancos aceitam a evidência da mesma forma. Alguns autorizam a
+consulta direto com os dados enviados na chamada; outros exigem uma ação externa
+do titular:
+
+| Banco | Autorização | Como |
+|---|---|---|
+| Unit (parceiros bancários próprios) | Via API | assinatura eletrônica com a evidência enviada na chamada |
+| HubCrédito | Via API | termo assinado programaticamente com geolocalização |
+| Zipdin | Via API | evidência enviada na chamada |
+| Facta | Via API | autorização automática via DATAPREV; raramente pode exigir confirmação adicional por SMS/WhatsApp |
+| C6 | Externa | biometria/prova de vida — o cliente completa por um link, resultado assíncrono |
+| Banco PAN | Externa | autorização via WhatsApp, sempre assíncrona |
+
+<Warning>
+  Banco PAN ainda não faz parte do fluxo automatizado da API de Parceiros — está
+  em desenvolvimento. Ele aparece nesta tabela pelo modelo de autorização, mas
+  hoje não retorna oferta nem ação pendente por esta API.
+</Warning>
+
+## O que acontece depois da oferta
+
+Depois que o cliente escolhe uma oferta, a operação ainda precisa ser
+**formalizada com o banco** — e isso exige um segundo conjunto de dados, que a
+consulta de evidência (acima) não cobre:
+
+- Endereço completo (CEP, logradouro, número, bairro, cidade, UF)
+- Dados bancários ou chave PIX para o desembolso
+- Documento de identidade (RG, órgão emissor, data de emissão)
+- Estado civil
+- Dados de emprego e renda
+
+Cada banco tem um fluxo de formalização próprio, com requisitos e prazos
+diferentes entre si. Hoje essa etapa acontece numa experiência hospedada pela
+própria Unit — direcione o cliente para lá a partir da oferta escolhida (fale
+com o time de parceiros para obter o link de handoff). Uma API unificada de
+submissão está no roadmap.
 
 <Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
+  Se seu produto já coleta esses dados (endereço, dados bancários, documento),
+  avise o time de parceiros — isso ajuda a priorizar quais bancos entram
+  primeiro numa futura API de submissão.
 </Tip>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## Webhooks
+
+Para bancos assíncronos e para autorizações externas que se completam depois da
+resposta inicial (ex.: C6 após a biometria), a Unit notifica sua aplicação via
+webhook, na URL configurada no cadastro do seu parceiro.
+
+<Note>
+  A configuração de webhook (URL + secret) já faz parte do cadastro do parceiro.
+  A **emissão** dos eventos assíncronos acompanha a habilitação dos bancos
+  assíncronos (C6 pós-biometria, Banco PAN) — confirme com o time de parceiros o
+  que já está ativo para a sua integração.
+</Note>
+
+### Payload
+
+```json
+{
+  "partner_id": "sua-empresa",
+  "external_reference": "12345678900",
+  "provider": "c6",
+  "event": "authorization_result",
+  "status": "approved",
+  "offers": [ /* mesmo formato de oferta da resposta síncrona */ ],
+  "timestamp": "2026-07-01T14:32:00Z"
+}
+```
+
+### Verificando a assinatura
+
+Toda chamada de webhook inclui um header `X-Unit-Signature` com um HMAC-SHA256
+do corpo da requisição, assinado com o webhook secret do seu cadastro. Valide a
+assinatura antes de processar o payload:
+
+<CodeGroup>
+
+```javascript Node.js
+const crypto = require('crypto')
+
+function isValidSignature(rawBody, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex')
+
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(signature)
+  )
+}
+```
+
+```python Python
+import hashlib
+import hmac
+
+def is_valid_signature(raw_body: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+</CodeGroup>
+
+<Warning>
+  Sempre compare assinaturas com uma função de comparação em tempo constante
+  (`timingSafeEqual`/`compare_digest`) — nunca com `===` ou `==`, que vazam
+  tempo de execução e enfraquecem a proteção.
+</Warning>
+
+Seu endpoint deve responder `2xx` para confirmar o recebimento. Chamadas sem
+confirmação são reenviadas com backoff.
+
+## Fora do escopo desta versão
+
+- **Formalização via API** — veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta).
+  Assinatura digital do contrato e coleta de dados complementares ainda
+  acontecem numa página hospedada pela Unit, não pela API de Parceiros.
+- **Submissão automatizada do Banco PAN** — ainda em desenvolvimento; não
+  retorna oferta nem ação pendente por esta API hoje.
+- **Rate limiting** — o cadastro do parceiro tem o campo, mas o limite ainda não
+  é aplicado.
+- **Autoatendimento de credenciais** — criação e rotação de API key são feitas
+  pelo time de parceiros da Unit; ainda não há um painel self-service.
+
+<Tip>
+  Dúvidas sobre a integração? Fale com o time de parceiros da Unit.
+</Tip>

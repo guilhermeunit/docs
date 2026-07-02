@@ -13,21 +13,19 @@
   },
   "navigation": {
     "pages": [
-      {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
-        ]
-      },
-      {
-        "group": "Parceiros",
-        "pages": [
-          "api-parceiros"
-        ]
-      }
+      "index"
     ]
   },
+  "redirects": [
+    {
+      "source": "/api-parceiros",
+      "destination": "/"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/"
+    }
+  ],
   "logo": {
     "light": "/logo/unit-horizontal.png",
     "dark": "/logo/unit-horizontal-white.png"
