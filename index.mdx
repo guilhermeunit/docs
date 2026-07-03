@@ -4,12 +4,13 @@ description: "Integre seu produto à Unit e origine propostas de crédito consig
 ---
 
 <Note>
-  A **fatia de consulta/cotação** desta API está **implementada e disponível**:
-  as rotas `/partners/v1/*`, a autenticação por parceiro e a seleção de bancos
-  descritas abaixo já estão no ar. A **formalização** da proposta (assinatura +
-  dados complementares) ainda acontece numa experiência hospedada pela Unit —
-  veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta). Para
-  obter credenciais (API key e configuração de webhook), fale com o time de
+  A **consulta/cotação** e a **formalização** desta API estão **implementadas e
+  disponíveis**: as rotas `/partners/v1/*` — incluindo a submissão de dados
+  complementares, o link de assinatura e o acompanhamento de status descritos em
+  [Formalizando uma proposta](#formalizando-uma-proposta) — já estão no ar. O
+  **ato de assinar** continua acontecendo no fluxo regulado do próprio banco
+  (ZipSign, biometria, DATAPREV); a API entrega o link para o cliente completar.
+  Para obter credenciais (API key e configuração de webhook), fale com o time de
   parceiros da Unit.
 </Note>
 
@@ -402,29 +403,336 @@ do titular:
   hoje não retorna oferta nem ação pendente por esta API.
 </Warning>
 
-## O que acontece depois da oferta
+## Formalizando uma proposta
 
 Depois que o cliente escolhe uma oferta, a operação ainda precisa ser
 **formalizada com o banco** — e isso exige um segundo conjunto de dados, que a
-consulta de evidência (acima) não cobre:
+consulta de evidência (acima) não cobre: endereço completo, dados bancários ou
+chave PIX para o desembolso, documento de identidade, estado civil e dados de
+emprego e renda. A API de Parceiros cobre também essa etapa — submissão dos
+dados complementares, link de assinatura e acompanhamento de status — nas
+mesmas rotas `/partners/v1/proposals*`.
 
-- Endereço completo (CEP, logradouro, número, bairro, cidade, UF)
-- Dados bancários ou chave PIX para o desembolso
-- Documento de identidade (RG, órgão emissor, data de emissão)
-- Estado civil
-- Dados de emprego e renda
+<Steps>
+  <Step title="Escolha uma oferta">
+    Use o `provider` e o identificador da oferta retornados na consulta (ver
+    `offer_ref` abaixo).
+  </Step>
+  <Step title="Submeta os dados complementares">
+    `POST /proposals` com a oferta escolhida (`offer_ref`) e o dataset de
+    submissão (endereço, documento, dados bancários/PIX etc.). A resposta traz
+    o `proposal_id` — nosso identificador estável para o restante do fluxo.
+  </Step>
+  <Step title="Peça o link de assinatura">
+    `POST /proposals/{proposal_id}/formalize` devolve `action.url`: o link
+    para o cliente completar a assinatura no fluxo do banco (ZipSign,
+    biometria, DATAPREV etc.).
+  </Step>
+  <Step title="Acompanhe o status">
+    `GET /proposals/{proposal_id}` devolve o status normalizado a qualquer
+    momento, sem que você precise reimplementar o fluxo de cada banco.
+  </Step>
+</Steps>
 
-Cada banco tem um fluxo de formalização próprio, com requisitos e prazos
-diferentes entre si. Hoje essa etapa acontece numa experiência hospedada pela
-própria Unit — direcione o cliente para lá a partir da oferta escolhida (fale
-com o time de parceiros para obter o link de handoff). Uma API unificada de
-submissão está no roadmap.
+### Rotas
 
-<Tip>
-  Se seu produto já coleta esses dados (endereço, dados bancários, documento),
-  avise o time de parceiros — isso ajuda a priorizar quais bancos entram
-  primeiro numa futura API de submissão.
-</Tip>
+| Rota | Uso |
+|---|---|
+| `POST /partners/v1/proposals` | Submete a oferta escolhida + os dados complementares. Devolve `proposal_id`. |
+| `POST /partners/v1/proposals/{proposal_id}/formalize` | Dispara/retorna o link de assinatura (`action.url`). |
+| `GET /partners/v1/proposals/{proposal_id}` | Status normalizado da proposta. |
+| `POST /partners/v1/proposals/{proposal_id}/cancel` | Cancela a proposta. Hoje só a **Facta** suporta — os demais bancos devolvem `501` normalizado. |
+
+<Note>
+  O ato de assinar acontece no fluxo regulado do banco (ZipSign, biometria C6,
+  DATAPREV, Unit-sign) — a API de Parceiros entrega o link e o status; ela não
+  captura a assinatura.
+</Note>
+
+### Dataset de submissão
+
+`POST /proposals` recebe **um objeto único**, o mesmo para todos os bancos. A
+API valida o subconjunto exigido pelo banco-alvo e devolve **`422`** com o(s)
+campo(s) faltando, antes de qualquer chamada ao banco.
+
+```json
+{
+  "offer_ref": { "provider": "c6", "offer_id": "998877" },
+  "titular": {
+    "nome": "Fulano de Tal",
+    "cpf": "12345678900",
+    "data_nascimento": "1990-01-31",
+    "sexo": "M",
+    "nome_mae": "Ciclana de Tal",
+    "estado_civil": "solteiro"
+  },
+  "documento": {
+    "numero": "1234567",
+    "orgao_emissor": "SSP",
+    "uf_emissor": "SP",
+    "data_emissao": "2015-03-10"
+  },
+  "contato": { "telefone": "5511999998888", "email": "fulano@example.com" },
+  "endereco": {
+    "cep": "01310100",
+    "logradouro": "Av. Paulista",
+    "numero": "1000",
+    "bairro": "Bela Vista",
+    "cidade": "São Paulo",
+    "uf": "SP"
+  },
+  "vinculo": {
+    "cnpj_empregador": "00000000000191",
+    "nome_empregador": "Empresa X",
+    "cargo": "Analista",
+    "salario": 4500.00,
+    "matricula": "998877"
+  },
+  "recebimento": {
+    "conta_bancaria": {
+      "banco": "001",
+      "agencia": "1234",
+      "conta": "56789",
+      "digito_conta": "0",
+      "tipo_conta": "corrente"
+    }
+  },
+  "assinatura": { "ip": "200.0.0.1" }
+}
+```
+
+<ParamField body="offer_ref" type="object" required>
+  A oferta escolhida — `{ provider, offer_id }`. `offer_id` é o identificador
+  da oferta que veio na consulta (ex.: `providerData` do banco: `id_simulador`
+  na Facta, `id_simulacao` no C6, `proposalNumber`/`preRegisterId` na Zipdin,
+  `auctionProposalKey` na Unit).
+</ParamField>
+
+<ParamField body="titular" type="object" required>
+  Dados do titular: `nome`, `cpf`, `data_nascimento`, `sexo` (`"M"` ou `"F"` —
+  normalizado; a API traduz para o código de cada banco), `nome_mae`, e,
+  conforme o banco, `nome_pai`, `nacionalidade`, `estado_civil`,
+  `naturalidade_cidade`, `naturalidade_uf`, `exposicao_politica`.
+</ParamField>
+
+<ParamField body="documento" type="object">
+  Documento de identidade (RG): `numero`, `orgao_emissor`, `uf_emissor`,
+  `data_emissao`. Exigido pela maioria dos bancos — ver matriz abaixo.
+</ParamField>
+
+<ParamField body="contato" type="object" required>
+  `telefone` e `email` do titular.
+</ParamField>
+
+<ParamField body="endereco" type="object" required>
+  Endereço completo: `cep`, `logradouro`, `numero`, `complemento` (opcional),
+  `bairro`, `cidade`, `uf`.
+</ParamField>
+
+<ParamField body="vinculo" type="object">
+  Dados de emprego e renda: `cnpj_empregador`, `nome_empregador`, `cargo`,
+  `salario`, `margem`, `data_admissao`, `matricula`. Exigência varia por
+  banco — ver matriz abaixo.
+</ParamField>
+
+<ParamField body="recebimento" type="object" required>
+  Para onde o crédito é desembolsado — **exatamente um** dos dois:
+  `conta_bancaria` (`banco`, `agencia`, `digito_agencia` opcional, `conta`,
+  `digito_conta`, `tipo_conta`) ou `pix` (`tipo_chave`, `chave`). Enviar os
+  dois, ou nenhum, retorna `422`.
+</ParamField>
+
+<ParamField body="assinatura" type="object" required>
+  `ip` — IP do titular no momento do aceite. `tipo_envio` (`"sms"` ou
+  `"whatsapp"`) controla como o link de assinatura é entregue, quando o banco
+  suportar.
+</ParamField>
+
+#### Matriz de exigência por banco
+
+Cada bloco é obrigatório, opcional ou irrelevante conforme o banco. Campos
+faltando para o banco-alvo retornam `422` com o campo, antes de qualquer
+chamada externa.
+
+| Bloco | Zipdin | Unit | C6 | Facta |
+|---|:--:|:--:|:--:|:--:|
+| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório |
+| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX |
+| `documento` (RG) | obrigatório | obrigatório | — | obrigatório |
+| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório |
+| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório |
+| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório |
+| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) |
+| `titular.sexo` | obrigatório | opcional | — | obrigatório |
+| `assinatura.ip` | — | obrigatório | — | — |
+| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) |
+
+¹ Na Unit, PIX é bloqueado para propostas roteadas para a carteira BMP — a
+validação recusa `pix` nesse caso, com mensagem clara.
+² Na Zipdin, `vinculo` cobre apenas cargo/empregador — não inclui renda.
+
+### Envelope de resposta
+
+`submit`, `formalize` e `status` devolvem o **mesmo envelope** — você escreve
+um handler de status e um de erro, independente do banco:
+
+```json
+{
+  "proposal_id": "a1b2c3d4",
+  "provider": "c6",
+  "status": "awaiting_signature",
+  "action": {
+    "type": "signature",
+    "url": "https://exemplo.bank/assinatura/xyz",
+    "delivery": null
+  },
+  "offer": {
+    "loanValue": 5000.00,
+    "installmentValue": 210.50,
+    "installments": 36,
+    "interestRate": 1.85
+  },
+  "error": null,
+  "provider_data": null,
+  "updated_at": "2026-07-01T14:40:00Z"
+}
+```
+
+<ResponseField name="proposal_id" type="string">
+  Nosso identificador opaco e estável da proposta — use-o em `formalize`,
+  `status` e `cancel`.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Estado normalizado da proposta (enum abaixo).
+</ResponseField>
+
+<ResponseField name="action" type="object | null">
+  Link de assinatura quando `status: awaiting_signature` — `type: "signature"`,
+  `url` (o link para o cliente completar) e `delivery`.
+</ResponseField>
+
+<ResponseField name="offer" type="object | null">
+  A oferta associada à proposta (`loanValue`, `installmentValue`,
+  `installments`, `interestRate`, ...).
+</ResponseField>
+
+<ResponseField name="error" type="object | null">
+  Erro normalizado, quando houver — `code`, `message`, `retryable` e `field`
+  (ver tabela de códigos abaixo).
+</ResponseField>
+
+<ResponseField name="provider_data" type="object | null">
+  Extensão crua por banco: identificadores e status originais, para quem
+  precisar do detalhe.
+</ResponseField>
+
+#### Status normalizado
+
+| `status` | Significado |
+|---|---|
+| `created` | Proposta submetida ao banco. |
+| `awaiting_signature` | Link de assinatura disponível, aguardando o cliente. |
+| `approved` | Proposta aprovada/averbada. |
+| `disbursed` | Crédito liberado. |
+| `paid` | Proposta paga. |
+| `rejected` | Proposta negada. |
+| `canceled` | Proposta cancelada. |
+
+#### Códigos de erro
+
+O contrato de erro é **normalizado** — um handler para o parceiro, não um por
+banco. `error.code` é estável entre bancos; `retryable` indica se vale a pena
+tentar de novo; `field` aponta o campo, quando aplicável.
+
+| `code` | HTTP | Quando |
+|---|:--:|---|
+| `invalid_input` | 422 | Campo faltando ou inválido — detectado antes de chamar o banco. |
+| `offer_expired` | 409 | A taxa/política/margem da oferta mudou desde a consulta. |
+| `provider_rejected` | 422 | O banco recusou a proposta (prazo, margem, assinatura). |
+| `authorization_expired` | 409 | Autorização/DATAPREV vencida. |
+| `duplicate` | 409 | Já existe uma proposta em andamento para este titular/banco. |
+| `provider_unavailable` | 502 | Banco fora do ar ou timeout. |
+| `provider_error` | 502 | Erro inesperado do banco. |
+| `not_found` | 404 | `proposal_id` desconhecido (ou de outro parceiro — ver segurança abaixo). |
+
+### Segurança
+
+<Warning>
+  `proposal_id` é escopado ao seu parceiro: só quem submeteu a proposta pode
+  formalizá-la, consultá-la ou cancelá-la. Tentar acessar a proposta de outro
+  parceiro (ou fora da sua allowlist de bancos) retorna `404`.
+</Warning>
+
+### Exemplo
+
+<CodeGroup>
+
+```bash Submeter
+curl -X POST https://api.somosunit.com.br/partners/v1/proposals \
+  -H "X-Partner-Api-Key: au_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "offer_ref": { "provider": "c6", "offer_id": "998877" },
+    "titular": {
+      "nome": "Fulano de Tal",
+      "cpf": "12345678900",
+      "data_nascimento": "1990-01-31",
+      "sexo": "M",
+      "nome_mae": "Ciclana de Tal"
+    },
+    "contato": { "telefone": "5511999998888", "email": "fulano@example.com" },
+    "endereco": {
+      "cep": "01310100",
+      "logradouro": "Av. Paulista",
+      "numero": "1000",
+      "bairro": "Bela Vista",
+      "cidade": "São Paulo",
+      "uf": "SP"
+    },
+    "recebimento": {
+      "conta_bancaria": {
+        "banco": "001",
+        "agencia": "1234",
+        "conta": "56789",
+        "digito_conta": "0",
+        "tipo_conta": "corrente"
+      }
+    },
+    "assinatura": { "ip": "200.0.0.1" }
+  }'
+```
+
+```bash Formalizar
+curl -X POST https://api.somosunit.com.br/partners/v1/proposals/a1b2c3d4/formalize \
+  -H "X-Partner-Api-Key: au_xxxxxxxx"
+```
+
+```bash Status
+curl https://api.somosunit.com.br/partners/v1/proposals/a1b2c3d4 \
+  -H "X-Partner-Api-Key: au_xxxxxxxx"
+```
+
+</CodeGroup>
+
+Resposta de `formalize`, com o link de assinatura pronto:
+
+```json
+{
+  "proposal_id": "a1b2c3d4",
+  "provider": "c6",
+  "status": "awaiting_signature",
+  "action": {
+    "type": "signature",
+    "url": "https://exemplo.bank/assinatura/xyz",
+    "delivery": null
+  },
+  "offer": null,
+  "error": null,
+  "provider_data": null,
+  "updated_at": "2026-07-01T14:40:00Z"
+}
+```
 
 ## Webhooks
 
@@ -499,9 +807,6 @@ confirmação são reenviadas com backoff.
 
 ## Fora do escopo desta versão
 
-- **Formalização via API** — veja [O que acontece depois da oferta](#o-que-acontece-depois-da-oferta).
-  Assinatura digital do contrato e coleta de dados complementares ainda
-  acontecem numa página hospedada pela Unit, não pela API de Parceiros.
 - **Submissão automatizada do Banco PAN** — ainda em desenvolvimento; não
   retorna oferta nem ação pendente por esta API hoje.
 - **Rate limiting** — o cadastro do parceiro tem o campo, mas o limite ainda não
