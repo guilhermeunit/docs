@@ -1,0 +1,1055 @@
+{
+  "info": {
+    "name": "AUTOUNIT — API de Parceiros",
+    "description": "Collection oficial da **API de Parceiros** da AUTOUNIT (Unit) — consulta/cotação e formalização (submit/formalize/status/cancel) de crédito consignado multi-banco. Ver guia completo em `docs/partners/api-parceiros-guia-integracao.md`.\n\n## Autenticação\nHeader **`X-Partner-Api-Key`** em toda requisição (configurado no nível da collection via a variável `{{apiKey}}`). A chave é entregue uma única vez na criação do parceiro e trafega **servidor-a-servidor** (nunca no frontend).\n\n## Seleção de bancos (duas camadas)\n1. **allowlist** fixo por parceiro (contratual, server-side).\n2. campo opcional **`providers`** por requisição — interseção com o allowlist.\n\n## Formalização (submit/formalize/status/cancel)\nEndpoint unificado — um schema só por trás de Zipdin/Unit/C6/Facta (§8.1 do guia). `proposal_id` é o id interno do card, devolvido pelo submit.\n\n## Base URL\nVariável `{{baseUrl}}` — troque o environment pra `sandbox` (`autounit-partners-sandbox.postman_environment.json`) pra testar sem tocar em banco real, com o catálogo de CPFs de teste documentado no guia (§14).\n\nGerada a partir dos contratos reais em produção; exemplos **anonimizados**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "au7c0000-0000-4000-a000-000000000001"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-Partner-Api-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.somosunit.com.br",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Consulta agregada",
+      "item": [
+        {
+          "name": "POST /partners/v1/consultas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/consultas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "consultas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Consulta **agregada** multi-banco. Roda em paralelo os bancos do *allowlist* do parceiro (interseção com o campo opcional `providers`) e devolve as propostas já ordenadas + `providerResults` detalhado por banco.\n\n⚠️ Dispara efeitos colaterais do fluxo síncrono (webhooks de lead, persistência de ofertas)."
+          },
+          "response": [
+            {
+              "name": "200 — propostas + providerResults",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "consultas"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Consulta **agregada** multi-banco. Roda em paralelo os bancos do *allowlist* do parceiro (interseção com o campo opcional `providers`) e devolve as propostas já ordenadas + `providerResults` detalhado por banco.\n\n⚠️ Dispara efeitos colaterais do fluxo síncrono (webhooks de lead, persistência de ofertas)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposals\": [\n    {\n      \"provider\": \"zipdin\",\n      \"loanValue\": 3141.14,\n      \"installmentValue\": 519.0,\n      \"installments\": 8,\n      \"interestRate\": 3.79,\n      \"tableCode\": \"NORMAL_0003\"\n    },\n    {\n      \"provider\": \"zipdin\",\n      \"loanValue\": 2487.16,\n      \"installmentValue\": 519.0,\n      \"installments\": 6,\n      \"interestRate\": 3.79,\n      \"tableCode\": \"NORMAL_0003\"\n    }\n  ],\n  \"providerResults\": {\n    \"zipdin\": {\n      \"provider\": \"zipdin\",\n      \"success\": true,\n      \"proposals\": [\n        \"…(ver offers acima)\"\n      ],\n      \"vinculos\": [\n        {\n          \"employerName\": \"EMPRESA EXEMPLO LTDA\"\n        }\n      ],\n      \"elapsedMs\": 1902\n    },\n    \"c6\": {\n      \"provider\": \"c6\",\n      \"success\": false,\n      \"proposals\": [],\n      \"noProposalReasons\": [\n        \"Cliente não autorizou prova de vida\"\n      ],\n      \"elapsedMs\": 5012\n    },\n    \"facta\": {\n      \"provider\": \"facta\",\n      \"success\": false,\n      \"proposals\": [],\n      \"noProposalReasons\": [\n        \"Cota diária DATAPREV atingida\"\n      ],\n      \"elapsedMs\": 1103\n    }\n  },\n  \"employers\": [\n    {\n      \"cnpj\": \"00000000000191\",\n      \"name\": \"EMPRESA EXEMPLO LTDA\"\n    }\n  ],\n  \"elapsedMs\": 5100,\n  \"timestamp\": \"2026-07-02T19:14:00.000000\",\n  \"simulationGroupId\": \"a1b2c3d4-0000-0000-0000-000000000000\"\n}"
+            },
+            {
+              "name": "401 — sem X-Partner-Api-Key",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "consultas"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": \"X-Partner-Api-Key ausente\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Consulta individual por banco",
+      "item": [
+        {
+          "name": "POST /partners/v1/providers/:name/consultas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/providers/:name/consultas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "providers",
+                ":name",
+                "consultas"
+              ],
+              "variable": [
+                {
+                  "key": "name",
+                  "value": "zipdin",
+                  "description": "Nome do banco (deve estar no allowlist): zipdin, c6, facta, unit, hubcredito…"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Consulta **um único banco** (precisa estar no *allowlist* do parceiro, senão **403**). Devolve o **envelope padrão** (`ProviderEnvelope`). Não dispara os webhooks de lead do fluxo agregado.\n\n**status:** `ok` (tem ofertas) · `no_offers` · `requires_action` (ver `action.url`) · `error`."
+          },
+          "response": [
+            {
+              "name": "200 — ok (2 ofertas, zipdin)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/providers/:name/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "providers",
+                    ":name",
+                    "consultas"
+                  ],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "zipdin",
+                      "description": "Nome do banco (deve estar no allowlist): zipdin, c6, facta, unit, hubcredito…"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Consulta **um único banco** (precisa estar no *allowlist* do parceiro, senão **403**). Devolve o **envelope padrão** (`ProviderEnvelope`). Não dispara os webhooks de lead do fluxo agregado.\n\n**status:** `ok` (tem ofertas) · `no_offers` · `requires_action` (ver `action.url`) · `error`."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"provider\": \"zipdin\",\n  \"status\": \"ok\",\n  \"offers\": [\n    {\n      \"provider\": \"zipdin\",\n      \"loan_value\": 2487.16,\n      \"installment_value\": 519.0,\n      \"installments\": 6,\n      \"interest_rate\": 3.79,\n      \"total_amount\": 3114.0,\n      \"table_code\": \"NORMAL_0003\",\n      \"first_due_date\": \"2026-09-20\",\n      \"employer_name\": \"EMPRESA EXEMPLO LTDA\",\n      \"employer_cnpj\": \"00000000000191\",\n      \"matricula\": null,\n      \"operator_commission\": null,\n      \"provider_data\": {\n        \"preRegisterId\": 1200652,\n        \"partnerCode\": 26462,\n        \"tableCode\": \"NORMAL_0003\",\n        \"maxInstallmentValue\": 519.74,\n        \"comSeguro\": true,\n        \"raw\": {\n          \"loanValue\": 2487.16,\n          \"installmentValue\": 519.0,\n          \"installmentsNumber\": 6,\n          \"monthlyRate\": 3.79,\n          \"yearlyRate\": 56.27,\n          \"monthlyCet\": 4.5,\n          \"yearlyCet\": 70.74,\n          \"withInsurance\": true,\n          \"insurance\": 43.0,\n          \"fundedValue\": 2574.69,\n          \"principalIof\": 33.56,\n          \"gracePeriod\": 50\n        },\n        \"cpfUsado\": \"11144477735\",\n        \"takerRegister\": {\n          \"customerName\": \"MARIA DE EXEMPLO SILVA\",\n          \"birthDate\": \"15/05/1990\",\n          \"motherName\": \"ANA DE EXEMPLO\",\n          \"gender\": \"F\"\n        },\n        \"takerData\": {\n          \"profession\": \"ANALISTA\",\n          \"registerId\": \"000000\"\n        },\n        \"discounts\": {\n          \"commitments\": 0.0,\n          \"inssValue\": 248.61,\n          \"irpfValue\": 38.92\n        }\n      }\n    },\n    {\n      \"provider\": \"zipdin\",\n      \"loan_value\": 3141.14,\n      \"installment_value\": 519.0,\n      \"installments\": 8,\n      \"interest_rate\": 3.79,\n      \"total_amount\": 4152.0,\n      \"table_code\": \"NORMAL_0003\",\n      \"first_due_date\": \"2026-09-20\",\n      \"employer_name\": \"EMPRESA EXEMPLO LTDA\",\n      \"employer_cnpj\": \"00000000000191\",\n      \"matricula\": null,\n      \"operator_commission\": null,\n      \"provider_data\": {\n        \"preRegisterId\": 1200652,\n        \"partnerCode\": 26462,\n        \"tableCode\": \"NORMAL_0003\",\n        \"maxInstallmentValue\": 519.74,\n        \"comSeguro\": true,\n        \"raw\": {\n          \"loanValue\": 3141.14,\n          \"installmentValue\": 519.0,\n          \"installmentsNumber\": 8,\n          \"monthlyRate\": 3.79,\n          \"yearlyRate\": 56.27,\n          \"monthlyCet\": 4.5,\n          \"yearlyCet\": 70.74,\n          \"withInsurance\": true,\n          \"insurance\": 43.0,\n          \"fundedValue\": 2574.69,\n          \"principalIof\": 33.56,\n          \"gracePeriod\": 50\n        },\n        \"cpfUsado\": \"11144477735\",\n        \"takerRegister\": {\n          \"customerName\": \"MARIA DE EXEMPLO SILVA\",\n          \"birthDate\": \"15/05/1990\",\n          \"motherName\": \"ANA DE EXEMPLO\",\n          \"gender\": \"F\"\n        },\n        \"takerData\": {\n          \"profession\": \"ANALISTA\",\n          \"registerId\": \"000000\"\n        },\n        \"discounts\": {\n          \"commitments\": 0.0,\n          \"inssValue\": 248.61,\n          \"irpfValue\": 38.92\n        }\n      }\n    }\n  ],\n  \"vinculos\": [\n    {\n      \"provider\": \"zipdin\",\n      \"cnpj\": \"00000000000191\",\n      \"employerName\": \"EMPRESA EXEMPLO LTDA\",\n      \"matricula\": null,\n      \"partnerCode\": null\n    }\n  ],\n  \"proposal_id\": null,\n  \"action\": null,\n  \"error\": null,\n  \"elapsed_ms\": 1902,\n  \"no_proposal_reasons\": [],\n  \"term_auto_authorized\": false,\n  \"provider_data\": null\n}"
+            },
+            {
+              "name": "200 — requires_action (assinatura DATAPREV)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/providers/:name/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "providers",
+                    ":name",
+                    "consultas"
+                  ],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "zipdin",
+                      "description": "Nome do banco (deve estar no allowlist): zipdin, c6, facta, unit, hubcredito…"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Consulta **um único banco** (precisa estar no *allowlist* do parceiro, senão **403**). Devolve o **envelope padrão** (`ProviderEnvelope`). Não dispara os webhooks de lead do fluxo agregado.\n\n**status:** `ok` (tem ofertas) · `no_offers` · `requires_action` (ver `action.url`) · `error`."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"provider\": \"zipdin\",\n  \"status\": \"requires_action\",\n  \"offers\": [],\n  \"vinculos\": [],\n  \"proposal_id\": null,\n  \"action\": {\n    \"type\": \"signature\",\n    \"url\": \"https://zipdinsign.zipdin.com.br/sign/EXEMPLO0000000000000000000000\",\n    \"detail\": null\n  },\n  \"error\": \"Assinatura DATAPREV pendente\",\n  \"elapsed_ms\": 422,\n  \"no_proposal_reasons\": [],\n  \"term_auto_authorized\": false,\n  \"provider_data\": null\n}"
+            },
+            {
+              "name": "200 — no_offers (c6: prova de vida)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/providers/:name/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "providers",
+                    ":name",
+                    "consultas"
+                  ],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "zipdin",
+                      "description": "Nome do banco (deve estar no allowlist): zipdin, c6, facta, unit, hubcredito…"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Consulta **um único banco** (precisa estar no *allowlist* do parceiro, senão **403**). Devolve o **envelope padrão** (`ProviderEnvelope`). Não dispara os webhooks de lead do fluxo agregado.\n\n**status:** `ok` (tem ofertas) · `no_offers` · `requires_action` (ver `action.url`) · `error`."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"provider\": \"c6\",\n  \"status\": \"no_offers\",\n  \"offers\": [],\n  \"vinculos\": [],\n  \"proposal_id\": null,\n  \"action\": null,\n  \"error\": null,\n  \"elapsed_ms\": 5012,\n  \"no_proposal_reasons\": [\n    \"Cliente não autorizou prova de vida (status: NAO_AUTORIZADO)\"\n  ],\n  \"term_auto_authorized\": false,\n  \"provider_data\": null\n}"
+            },
+            {
+              "name": "200 — error (cota da loja)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/providers/:name/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "providers",
+                    ":name",
+                    "consultas"
+                  ],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "zipdin",
+                      "description": "Nome do banco (deve estar no allowlist): zipdin, c6, facta, unit, hubcredito…"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Consulta **um único banco** (precisa estar no *allowlist* do parceiro, senão **403**). Devolve o **envelope padrão** (`ProviderEnvelope`). Não dispara os webhooks de lead do fluxo agregado.\n\n**status:** `ok` (tem ofertas) · `no_offers` · `requires_action` (ver `action.url`) · `error`."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"provider\": \"hubcredito\",\n  \"status\": \"error\",\n  \"offers\": [],\n  \"vinculos\": [],\n  \"proposal_id\": null,\n  \"action\": null,\n  \"error\": \"Loja XXXXX atingiu o limite de consultas para CLT Consignado. Limite: 100, Consumido: 100\",\n  \"elapsed_ms\": 423,\n  \"no_proposal_reasons\": [],\n  \"term_auto_authorized\": false,\n  \"provider_data\": null\n}"
+            },
+            {
+              "name": "403 — banco fora do allowlist",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/providers/banco_pan/consultas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "providers",
+                    "banco_pan",
+                    "consultas"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": \"provider 'banco_pan' fora do allowlist do parceiro\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Formalização (submit / formalize / status / cancel)",
+      "description": "Endpoint unificado de formalização (§8.1 do guia) — mesmo schema por trás de Zipdin/Unit/C6/Facta. Exemplos abaixo usam o CPF `99922255561` do catálogo do sandbox (Facta: fluxo completo submit→formalize→paga→cancelada).",
+      "item": [
+        {
+          "name": "POST /partners/v1/proposals (submit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/proposals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "proposals"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+          },
+          "response": [
+            {
+              "name": "201 — submit ok (Facta)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposal_id\": \"123\",\n  \"provider\": \"facta\",\n  \"status\": \"ok\",\n  \"action\": null,\n  \"offer\": null,\n  \"error\": null,\n  \"provider_data\": null,\n  \"updated_at\": \"2026-07-06T21:27:18.495375+00:00\"\n}"
+            },
+            {
+              "name": "422 — bloco obrigatório ausente",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"campo obrigatório ausente: nome_pai\",\n    \"retryable\": false,\n    \"field\": \"nome_pai\"\n  }\n}"
+            },
+            {
+              "name": "422 — oferta Unit não resolvida (server-side)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"oferta Unit não resolvida — termos financeiros indisponíveis para o CPF/offer_id\",\n    \"retryable\": false,\n    \"field\": \"offer_ref.offer_id\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /partners/v1/proposals/:proposal_id/formalize",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id/formalize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "proposals",
+                ":proposal_id",
+                "formalize"
+              ],
+              "variable": [
+                {
+                  "key": "proposal_id",
+                  "value": "123",
+                  "description": "id interno do card, devolvido pelo submit"
+                }
+              ]
+            },
+            "description": "Dispara/retorna o link de assinatura da proposta (ownership checada pelo parceiro autenticado)."
+          },
+          "response": [
+            {
+              "name": "200 — link de assinatura (Facta)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id/formalize",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals",
+                    ":proposal_id",
+                    "formalize"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proposal_id",
+                      "value": "123",
+                      "description": "id interno do card, devolvido pelo submit"
+                    }
+                  ]
+                },
+                "description": "Dispara/retorna o link de assinatura da proposta (ownership checada pelo parceiro autenticado)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposal_id\": \"123\",\n  \"provider\": \"facta\",\n  \"status\": \"awaiting_signature\",\n  \"action\": {\n    \"type\": \"signature\",\n    \"url\": \"https://facta.sandbox.somosunit.com.br/formalizacao/SANDBOX01\",\n    \"delivery\": null\n  },\n  \"offer\": null,\n  \"error\": null,\n  \"provider_data\": null,\n  \"updated_at\": \"2026-07-06T21:27:18.495375+00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /partners/v1/proposals/:proposal_id (status)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "proposals",
+                ":proposal_id"
+              ],
+              "variable": [
+                {
+                  "key": "proposal_id",
+                  "value": "123",
+                  "description": "id interno do card, devolvido pelo submit"
+                }
+              ]
+            },
+            "description": "Status normalizado da proposta — projeção do `PipelineStatus` da linha, mantido atualizado pelo scheduler de cada banco (não faz chamada síncrona ao banco)."
+          },
+          "response": [
+            {
+              "name": "200 — paga (Facta)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals",
+                    ":proposal_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proposal_id",
+                      "value": "123",
+                      "description": "id interno do card, devolvido pelo submit"
+                    }
+                  ]
+                },
+                "description": "Status normalizado da proposta — projeção do `PipelineStatus` da linha, mantido atualizado pelo scheduler de cada banco (não faz chamada síncrona ao banco)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposal_id\": \"123\",\n  \"provider\": \"facta\",\n  \"status\": \"paid\",\n  \"action\": null,\n  \"offer\": null,\n  \"error\": null,\n  \"provider_data\": null,\n  \"updated_at\": \"2026-07-06T21:27:18.495375+00:00\"\n}"
+            },
+            {
+              "name": "404 — proposal_id de outro parceiro (ownership)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals",
+                    ":proposal_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proposal_id",
+                      "value": "123",
+                      "description": "id interno do card, devolvido pelo submit"
+                    }
+                  ]
+                },
+                "description": "Status normalizado da proposta — projeção do `PipelineStatus` da linha, mantido atualizado pelo scheduler de cada banco (não faz chamada síncrona ao banco)."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": \"proposta não encontrada\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /partners/v1/proposals/:proposal_id/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "proposals",
+                ":proposal_id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "proposal_id",
+                  "value": "123",
+                  "description": "id interno do card, devolvido pelo submit"
+                }
+              ]
+            },
+            "description": "Cancela a proposta. Só **Facta** suporta hoje (`supports_cancel`); nos demais bancos o adapter devolve **501** (`error.code=provider_error`)."
+          },
+          "response": [
+            {
+              "name": "200 — cancelada (Facta)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals",
+                    ":proposal_id",
+                    "cancel"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proposal_id",
+                      "value": "123",
+                      "description": "id interno do card, devolvido pelo submit"
+                    }
+                  ]
+                },
+                "description": "Cancela a proposta. Só **Facta** suporta hoje (`supports_cancel`); nos demais bancos o adapter devolve **501** (`error.code=provider_error`)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposal_id\": \"123\",\n  \"provider\": \"facta\",\n  \"status\": \"canceled\",\n  \"action\": null,\n  \"offer\": null,\n  \"error\": null,\n  \"provider_data\": null,\n  \"updated_at\": \"2026-07-06T21:27:18.495375+00:00\"\n}"
+            },
+            {
+              "name": "501 — banco não suporta cancel (ex.: Unit/C6/Zipdin)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals/:proposal_id/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals",
+                    ":proposal_id",
+                    "cancel"
+                  ],
+                  "variable": [
+                    {
+                      "key": "proposal_id",
+                      "value": "123",
+                      "description": "id interno do card, devolvido pelo submit"
+                    }
+                  ]
+                },
+                "description": "Cancela a proposta. Só **Facta** suporta hoje (`supports_cancel`); nos demais bancos o adapter devolve **501** (`error.code=provider_error`)."
+              },
+              "status": "Not Implemented",
+              "code": 501,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": {\n    \"code\": \"provider_error\",\n    \"message\": \"[unit] operação não suportada: cancel\",\n    \"retryable\": false,\n    \"field\": null\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stream de ofertas (SSE)",
+      "item": [
+        {
+          "name": "POST /partners/v1/consultas/stream",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/consultas/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "consultas",
+                "stream"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "**Stream SSE** — resultado progressivo por banco (`text/event-stream`). Eventos: `start` → `provider_start` (por banco) → `provider_result` → `complete`. Entrega só os resultados progressivos; não replica os efeitos cross-provider da rota agregada."
+          },
+          "response": [
+            {
+              "name": "200 — text/event-stream",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/consultas/stream",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "consultas",
+                    "stream"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "**Stream SSE** — resultado progressivo por banco (`text/event-stream`). Eventos: `start` → `provider_start` (por banco) → `provider_result` → `complete`. Entrega só os resultados progressivos; não replica os efeitos cross-provider da rota agregada."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/event-stream"
+                }
+              ],
+              "cookie": [],
+              "body": "data: {\"event\": \"start\", \"message\": \"Iniciando consulta paralela\"}\n\ndata: {\"event\": \"provider_start\", \"provider\": \"zipdin\"}\n\ndata: {\"event\": \"provider_start\", \"provider\": \"c6\"}\n\ndata: {\"event\": \"provider_result\", \"provider\": \"zipdin\", \"success\": true, \"proposals\": [{\"loanValue\": 2487.16, \"installments\": 6}], \"elapsedMs\": 1902}\n\ndata: {\"event\": \"provider_result\", \"provider\": \"c6\", \"success\": false, \"noProposalReasons\": [\"Cliente não autorizou prova de vida\"], \"elapsedMs\": 5012}\n\ndata: {\"event\": \"complete\"}\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Exemplo — seleção por requisição",
+      "item": [
+        {
+          "name": "POST /partners/v1/consultas (providers=[zipdin,c6])",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/consultas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "consultas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"MARIA DE EXEMPLO SILVA\",\n  \"data_nascimento\": \"1990-05-15\",\n  \"telefone\": \"11987654321\",\n  \"email\": \"maria@exemplo.com\",\n  \"client_ip\": \"203.0.113.10\",\n  \"sexo\": 0,\n  \"providers\": [\n    \"zipdin\",\n    \"c6\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Mesma rota agregada, restringindo a consulta a um subconjunto do allowlist via `providers`. O efetivo é `allowlist ∩ providers`."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
