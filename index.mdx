@@ -734,6 +734,33 @@ Resposta de `formalize`, com o link de assinatura pronto:
 }
 ```
 
+## Sandbox de Homologação
+
+Antes de integrar em produção, teste sua integração no **sandbox** — um
+ambiente que responde exatamente como a API real (mesmas rotas, mesmo
+contrato, mesmos códigos de erro), mas **100% simulado**: não bate em nenhum
+banco de verdade e não usa dados reais.
+
+<Note>
+  Base URL do sandbox: `https://sandbox.api.somosunit.com.br`. Chave de teste
+  fixa (pública, pode usar livremente): `au_sandbox00000000000000000000000`.
+</Note>
+
+### CPFs de teste — catálogo de cenários
+
+| CPF | Cenário |
+|---|---|
+| `11144477735` | Sucesso em todos os bancos (ofertas reais retornadas) |
+| `22255588846` | Sem oferta em todos os bancos (`no_offers`) |
+| `33366699957` | Requer ação externa em todos os bancos (assinatura/biometria/DATAPREV) |
+| `44477700068` | Erro em todos os bancos |
+| `55588811179` | Combo: mistura de desfechos por banco (cenário realista) |
+| `66699922230` | Formalização Zipdin completa: submit → link de assinatura → aprovado |
+| `77700033341` | Formalização Unit rejeitada pelo banco (prazo fora do limite) |
+| `88811144452` | Formalização C6: proposta já em andamento (`duplicate`) |
+| `99922255563` | Formalização Facta completa: submit → link → paga → cancelada (+ combo Unit/C6) |
+| `10033366674` | Formalização Facta: oferta expirada no submit (`offer_expired`) |
+
 ## Webhooks
 
 Para bancos assíncronos e para autorizações externas que se completam depois da
