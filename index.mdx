@@ -840,15 +840,6 @@ def is_valid_signature(raw_body: bytes, signature: str, secret: str) -> bool:
 Seu endpoint deve responder `2xx` para confirmar o recebimento. Chamadas sem
 confirmação são reenviadas com backoff.
 
-## Fora do escopo desta versão
-
-- **Submissão automatizada do Banco PAN** — ainda em desenvolvimento; não
-  retorna oferta nem ação pendente por esta API hoje.
-- **Rate limiting** — o cadastro do parceiro tem o campo, mas o limite ainda não
-  é aplicado.
-- **Autoatendimento de credenciais** — criação e rotação de API key são feitas
-  pelo time de parceiros da Unit; ainda não há um painel self-service.
-
 <Tip>
   Dúvidas sobre a integração? Fale com o time de parceiros da Unit.
 </Tip>
