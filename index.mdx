@@ -403,6 +403,19 @@ do titular:
   hoje não retorna oferta nem ação pendente por esta API.
 </Warning>
 
+<Note>
+  **C6 — a biometria vem antes da oferta.** Diferente dos outros bancos, o C6 só
+  gera oferta **depois** que o titular conclui a prova de vida. Enquanto isso, a
+  consulta retorna o C6 **sem oferta**, com o link de biometria em
+  `action` (`type: "biometria"`). Quando o cliente conclui:
+
+  1. a Unit envia o webhook [`authorization_result`](#webhooks) com as ofertas do C6; e
+  2. as ofertas também passam a aparecer numa nova consulta do mesmo CPF (fallback caso você não use webhook).
+
+  Só então siga para a formalização. O `GET /partners/v1/proposals/{id}` **não**
+  se aplica nessa espera — ainda não existe proposta (o submit vem depois da oferta).
+</Note>
+
 ## Formalizando uma proposta
 
 Depois que o cliente escolhe uma oferta, a operação ainda precisa ser
@@ -760,6 +773,7 @@ banco de verdade e não usa dados reais.
 | `88811144450` | Formalização C6: proposta já em andamento (`duplicate`) |
 | `99922255561` | Formalização Facta completa: submit → link → paga → cancelada (+ combo Unit/C6) |
 | `10033366632` | Formalização Facta: oferta expirada no submit (`offer_expired`) |
+| `12345678909` | C6 — auto-flip da biometria: a 1ª consulta retorna `requires_action` + link; ~15s depois a consulta passa a retornar as ofertas e dispara o webhook `authorization_result` (configure um `webhook_url` no cadastro sandbox para recebê-lo) |
 
 <Note>
   Para testar a formalização da **Unit**, use `POST /partners/v1/consultas`
@@ -789,9 +803,9 @@ webhook, na URL configurada no cadastro do seu parceiro.
 
 <Note>
   A configuração de webhook (URL + secret) já faz parte do cadastro do parceiro.
-  A **emissão** dos eventos assíncronos acompanha a habilitação dos bancos
-  assíncronos (C6 pós-biometria, Banco PAN) — confirme com o time de parceiros o
-  que já está ativo para a sua integração.
+  O evento `authorization_result` do **C6** (pós-biometria) já está **no ar**:
+  quando o cliente conclui a prova de vida, a Unit envia o webhook com as ofertas
+  do C6. O Banco PAN segue a mesma forma quando entrar no fluxo automatizado.
 </Note>
 
 ### Payload
@@ -851,6 +865,13 @@ def is_valid_signature(raw_body: bytes, signature: str, secret: str) -> bool:
 
 Seu endpoint deve responder `2xx` para confirmar o recebimento. Chamadas sem
 confirmação são reenviadas com backoff.
+
+<Note>
+  A entrega é **at-least-once**: em cenários raros (uma falha de rede entre a
+  gravação da oferta e o envio), o mesmo evento pode chegar mais de uma vez.
+  Trate os webhooks de forma idempotente — deduplique pela combinação
+  `(external_reference, event)`.
+</Note>
 
 <Tip>
   Dúvidas sobre a integração? Fale com o time de parceiros da Unit.

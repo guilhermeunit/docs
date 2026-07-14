@@ -13,7 +13,8 @@
   },
   "navigation": {
     "pages": [
-      "index"
+      "index",
+      "changelog"
     ]
   },
   "redirects": [

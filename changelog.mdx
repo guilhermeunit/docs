@@ -1,0 +1,49 @@
+---
+title: "Changelog"
+description: "Novidades e mudanças na API de Parceiros da Unit"
+---
+
+<Update label="14 de julho de 2026" description="Webhook de autorização do C6">
+  ## Webhook de autorização do C6 (biometria)
+
+  O evento [`authorization_result`](/#webhooks) do **C6** entrou no ar. Quando o
+  titular conclui a prova de vida, a Unit envia um webhook com as ofertas do C6
+  já embutidas — você não precisa mais ficar consultando o status para saber que
+  a autorização foi concluída.
+
+  - **Payload com ofertas.** O webhook traz `event: "authorization_result"`,
+    `status: "approved"` e o array `offers` no mesmo formato da consulta síncrona.
+  - **Assinado.** Header `X-Unit-Signature` (HMAC-SHA256 do corpo). Valide sempre
+    com comparação em tempo constante.
+  - **Entrega at-least-once.** Trate os webhooks de forma idempotente,
+    deduplicando por `(external_reference, event)`.
+
+  A documentação do **modelo de autorização do C6** foi esclarecida: a biometria
+  acontece **antes** da oferta — a consulta retorna o link de biometria e as
+  ofertas do C6 chegam depois (por webhook ou numa nova consulta do mesmo CPF).
+
+  <Info>
+    **Sandbox:** o CPF de teste `12345678909` simula esse fluxo de ponta a ponta —
+    a 1ª consulta retorna `requires_action` + link e, ~15s depois, as ofertas são
+    liberadas e o webhook dispara. Configure um `webhook_url` no cadastro sandbox
+    para recebê-lo.
+  </Info>
+</Update>
+
+<Update label="6 de julho de 2026" description="Lançamento público da API de Parceiros">
+  ## Lançamento público da API de Parceiros
+
+  Primeira versão pública da API `/partners/v1/*`, cobrindo o fluxo completo de
+  originação de crédito consignado em múltiplos bancos numa integração única.
+
+  - **Consulta agregada multi-banco.** `POST /partners/v1/consultas` — numa
+    chamada você consulta todos os bancos habilitados para a sua parceria (ou um
+    subconjunto), com resposta síncrona ou por streaming (SSE).
+  - **Formalização unificada.** `submit`, `formalize`, `status` e `cancel` num
+    contrato único para **Zipdin, Unit, C6 e Facta** — link de assinatura e
+    acompanhamento de status inclusos.
+  - **Sandbox de homologação.** Ambiente 100% simulado (`sandbox.api.somosunit.com.br`),
+    com catálogo de CPFs de teste para cada cenário — sem tocar em nenhum banco real.
+  - **Collection do Postman.** Endpoints e environments (produção e sandbox)
+    prontos para importar.
+</Update>
