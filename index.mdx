@@ -120,7 +120,7 @@ curl -X POST https://api.somosunit.com.br/partners/v1/consultas \
     "cpf": "12345678900",
     "nome": "Fulano de Tal",
     "data_nascimento": "1990-01-31",
-    "telefone": "5511999998888",
+    "telefone": "11999998888",
     "email": "fulano@example.com",
     "client_ip": "200.0.0.1",
     "geolocation": { "lat": -23.5, "lng": -46.6 },
@@ -136,7 +136,7 @@ curl -N -X POST https://api.somosunit.com.br/partners/v1/consultas/stream \
     "cpf": "12345678900",
     "nome": "Fulano de Tal",
     "data_nascimento": "1990-01-31",
-    "telefone": "5511999998888",
+    "telefone": "11999998888",
     "email": "fulano@example.com",
     "client_ip": "200.0.0.1"
   }'
@@ -150,7 +150,7 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
     "cpf": "12345678900",
     "nome": "Fulano de Tal",
     "data_nascimento": "1990-01-31",
-    "telefone": "5511999998888",
+    "telefone": "11999998888",
     "email": "fulano@example.com",
     "client_ip": "200.0.0.1"
   }'
@@ -173,11 +173,14 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
 </ParamField>
 
 <ParamField body="telefone" type="string" required>
-  Telefone do titular com DDI e DDD (ex.: `5511999998888`).
+  Telefone do titular no formato **DDD+número, 10-11 dígitos** (ex.:
+  `11999998888`). O DDI `55` é opcional — se vier (`5511999998888`), a API
+  remove automaticamente. Qualquer outro formato retorna `422 invalid_input`.
 </ParamField>
 
 <ParamField body="email" type="string" required>
-  E-mail do titular.
+  E-mail do titular, em formato válido. Vazio ou inválido retorna
+  `422 invalid_input` — o HubCrédito não processa consultas sem e-mail.
 </ParamField>
 
 <ParamField body="client_ip" type="string" required>
@@ -485,7 +488,7 @@ campo(s) faltando, antes de qualquer chamada ao banco.
     "uf_emissor": "SP",
     "data_emissao": "2015-03-10"
   },
-  "contato": { "telefone": "5511999998888", "email": "fulano@example.com" },
+  "contato": { "telefone": "11999998888", "email": "fulano@example.com" },
   "endereco": {
     "cep": "01310100",
     "logradouro": "Av. Paulista",
@@ -694,7 +697,7 @@ curl -X POST https://api.somosunit.com.br/partners/v1/proposals \
       "sexo": "M",
       "nome_mae": "Ciclana de Tal"
     },
-    "contato": { "telefone": "5511999998888", "email": "fulano@example.com" },
+    "contato": { "telefone": "11999998888", "email": "fulano@example.com" },
     "endereco": {
       "cep": "01310100",
       "logradouro": "Av. Paulista",
