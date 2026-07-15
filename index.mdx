@@ -558,7 +558,8 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   Para onde o crédito é desembolsado — **exatamente um** dos dois:
   `conta_bancaria` (`banco`, `agencia`, `digito_agencia` opcional, `conta`,
   `digito_conta`, `tipo_conta`) ou `pix` (`tipo_chave`, `chave`). Enviar os
-  dois, ou nenhum, retorna `422`.
+  dois, ou nenhum, retorna `422`. O campo `banco` usa o **código COMPE** —
+  consulte a lista aceita em [`GET /partners/v1/banks`](#lista-de-bancos).
 </ParamField>
 
 <ParamField body="assinatura" type="object" required>
@@ -752,6 +753,20 @@ Resposta de `formalize`, com o link de assinatura pronto:
   "updated_at": "2026-07-01T14:40:00Z"
 }
 ```
+
+## Lista de bancos
+
+`GET /partners/v1/banks` (autenticado pela mesma API key) devolve as
+instituições bancárias aceitas em `recebimento.conta_bancaria.banco`:
+
+```json
+{ "banks": [ { "code": "001", "name": "Banco do Brasil (BB)" },
+             { "code": "104", "name": "Caixa Econômica Federal (CEF)" },
+             { "code": "260", "name": "Nubank (Nu Pagamentos)" } ] }
+```
+
+É uma lista curada de referência para o seu formulário — a aceitação final
+de cada instituição é validada pelo banco de crédito no submit/formalização.
 
 ## Sandbox de Homologação
 
