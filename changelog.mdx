@@ -3,6 +3,15 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="GET /banks — lista de instituições bancárias">
+  ## Lista de bancos para conta de recebimento
+
+  Novo endpoint [`GET /partners/v1/banks`](/#lista-de-bancos): devolve os
+  códigos COMPE aceitos em `recebimento.conta_bancaria.banco` —
+  `{"banks": [{"code", "name"}]}`. Use para popular o seletor de banco no seu
+  formulário; a aceitação final por instituição segue validada no submit.
+</Update>
+
 <Update label="15 de julho de 2026" description="offerId nas ofertas e formalização Facta">
   ## `offerId` em toda oferta + formalização Facta funcional
 
