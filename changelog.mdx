@@ -3,6 +3,17 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="Formalização Unit: link de assinatura sempre entregue">
+  ## Formalização Unit devolve o link de assinatura de forma confiável
+
+  Contratos Unit emitidos pela carteira BMP já nascem com o link de assinatura
+  (QiSign), mas uma falha na captura do identificador da CCB fazia o
+  `formalize` responder erro em vez do link em alguns cenários — inclusive ao
+  reformalizar um contrato já existente. Corrigido: o identificador e o link
+  são persistidos na emissão e o `formalize` devolve o link direto
+  (`requires_action` + `signatureUrl`), sem depender de nova chamada ao banco.
+</Update>
+
 <Update label="15 de julho de 2026" description="Re-simulação em sequência sempre traz offerId">
   ## `offerId` imediato na re-simulação com parâmetros
 
