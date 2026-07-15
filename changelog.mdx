@@ -3,6 +3,17 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="Consultas herdam a identidade do parceiro (originador)">
+  ## Consulta usa a identidade do parceiro por padrão
+
+  Consultas sem o campo `originador` rodavam com a identidade genérica — na
+  Unit isso significava consultar os fundos errados, e um cliente com oferta
+  disponível podia voltar como "sem proposta" para o parceiro. Agora toda
+  consulta assume automaticamente a identidade do seu cadastro (a mesma da
+  atribuição no card); o campo `originador` segue disponível apenas como
+  override explícito.
+</Update>
+
 <Update label="15 de julho de 2026" description="Formalização Unit: link de assinatura sempre entregue">
   ## Formalização Unit devolve o link de assinatura de forma confiável
 
