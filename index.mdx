@@ -518,10 +518,13 @@ campo(s) faltando, antes de qualquer chamada ao banco.
 ```
 
 <ParamField body="offer_ref" type="object" required>
-  A oferta escolhida — `{ provider, offer_id }`. `offer_id` é o identificador
-  da oferta que veio na consulta (ex.: `providerData` do banco: `id_simulador`
-  na Facta, `id_simulacao` no C6, `proposalNumber`/`preRegisterId` na Zipdin,
-  `auctionProposalKey` na Unit).
+  A oferta escolhida — `{ provider, offer_id }`. **Envie o `offerId` que veio
+  em cada oferta da consulta** — ele identifica a oferta persistida e funciona
+  para qualquer banco. Para **Facta** e **Unit**, a API resolve a oferta
+  server-side (na Facta, a simulação é re-executada no momento do submit — o
+  identificador nunca expira). Compat: os ids nativos do `providerData`
+  (`id_simulacao` no C6, `proposalNumber` na Zipdin, `simulationId` na Unit)
+  continuam aceitos.
 </ParamField>
 
 <ParamField body="titular" type="object" required>
@@ -779,11 +782,11 @@ banco de verdade e não usa dados reais.
 | `12345678909` | C6 — auto-flip da biometria: a 1ª consulta retorna `requires_action` + link; ~15s depois a consulta passa a retornar as ofertas e dispara o webhook `authorization_result` (configure um `webhook_url` no cadastro sandbox para recebê-lo) |
 
 <Note>
-  Para testar a formalização da **Unit**, use `POST /partners/v1/consultas`
-  (agregada) antes do submit — não `POST /partners/v1/providers/unit/consultas`
-  (individual). Só a rota agregada resolve e persiste a oferta que o submit da
-  Unit exige (`offer_ref.offer_id` = o `simulationId` retornado em
-  `providerData.raw`), igual em produção.
+  Use `POST /partners/v1/consultas` (agregada) antes do submit — não a rota
+  individual. Só a agregada **persiste as ofertas** e devolve o `offerId` que
+  o submit usa (`offer_ref.offer_id`), igual em produção. Se `offerId` vier
+  `null` (re-consulta do mesmo CPF em menos de 60s reaproveita o grupo
+  anterior), aguarde e re-consulte.
 </Note>
 
 ### Collection do Postman
