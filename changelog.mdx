@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="Simulação por valor: prazo default 48 na Unit">
+  ## Simulação por valor sem prazo agora funciona na Unit
+
+  `loan_value` enviado **sem** `prazo` passava batido na Unit: o valor pedido
+  era ignorado e a resposta trazia a proposta máxima disponível. Agora a Unit
+  assume **48 parcelas** (o mesmo default do nosso formulário interno) e
+  ajusta automaticamente quando o prazo não está disponível — o valor pedido
+  é honrado. Para fixar um prazo específico, envie `prazo` junto. Os dois
+  modos de simulação ("por valor final" e "por parcela") estão documentados
+  nos campos da consulta.
+</Update>
+
 <Update label="15 de julho de 2026" description="GET /banks — lista de instituições bancárias">
   ## Lista de bancos para conta de recebimento
 

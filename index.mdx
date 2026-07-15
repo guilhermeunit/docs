@@ -218,15 +218,22 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
 </ParamField>
 
 <ParamField body="loan_value" type="number">
-  Valor de empréstimo desejado, para direcionar a simulação. Opcional.
+  **Modo "por valor final"**: simula o valor de empréstimo desejado. Envie
+  junto com `prazo`; se `prazo` for omitido, a Unit assume **48 parcelas**
+  (o mesmo default do nosso formulário) e ajusta automaticamente quando o
+  prazo não está disponível para o cliente. Opcional.
 </ParamField>
 
 <ParamField body="prazo" type="integer">
-  Prazo desejado (nº de parcelas), para direcionar a simulação. Opcional.
+  Número de parcelas desejado. Acompanha `loan_value` (por valor) ou
+  `valor_parcela` (por parcela). Opcional — default 48 no modo por valor.
 </ParamField>
 
 <ParamField body="valor_parcela" type="number">
-  Valor de parcela desejado, para direcionar a simulação. Opcional.
+  **Modo "por parcela"**: simula pela parcela mensal desejada — o valor é
+  derivado automaticamente. É o modo universal (todos os bancos simulam por
+  parcela). Envie junto com `prazo`. Opcional. Quando `loan_value` e
+  `valor_parcela` vêm juntos, o valor tem prioridade.
 </ParamField>
 
 <ParamField body="with_insurance" type="boolean" default="true">
