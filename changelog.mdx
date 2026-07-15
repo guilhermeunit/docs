@@ -3,6 +3,41 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="offerId nas ofertas e formalização Facta">
+  ## `offerId` em toda oferta + formalização Facta funcional
+
+  A consulta agregada agora retorna **`offerId`** em cada oferta — o
+  identificador canônico para o `offer_ref.offer_id` do submit, em qualquer
+  banco.
+
+  - **Facta:** a formalização passou a resolver a oferta **server-side** — a
+    API re-executa a simulação no momento do submit com os dados da tabela
+    escolhida. O identificador **nunca expira**; se a tabela não estiver mais
+    elegível, a resposta é `409 offer_expired` (refaça a consulta).
+    Corrige o contrato anterior, que pedia um `id_simulador` que a consulta
+    de produção não retornava.
+  - **Unit:** também aceita o `offerId` (o `simulationId` legado continua
+    válido).
+  - **C6/Zipdin:** seguem com os ids nativos do `providerData`
+    (`id_simulacao` / `proposalNumber`).
+  - `offerId` pode vir `null` num caso raro (re-consulta do mesmo CPF em
+    menos de 60 segundos reaproveita o grupo anterior) — aguarde e
+    re-consulte.
+</Update>
+
+<Update label="14 de julho de 2026" description="Validação na borda: telefone, email e 422">
+  ## Validação mais clara na entrada
+
+  - **`telefone`**: formato canônico é **DDD+número (10-11 dígitos)**; o DDI
+    `55` é aceito e removido automaticamente. Fora disso, `422 invalid_input`.
+  - **`email`**: obrigatório em formato válido (o HubCrédito não processa
+    consultas sem e-mail).
+  - **Erros de validação** nas rotas `/partners/v1/*` agora respondem
+    `422` com o envelope documentado
+    (`{"code": "invalid_input", "message", "retryable", "field"}`) — antes
+    saíam como `400` num formato interno.
+</Update>
+
 <Update label="14 de julho de 2026" description="Webhook de autorização do C6">
   ## Webhook de autorização do C6 (biometria)
 
