@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de julho de 2026" description="Re-simulação em sequência sempre traz offerId">
+  ## `offerId` imediato na re-simulação com parâmetros
+
+  O fluxo natural — consultar, ver a oferta máxima, o cliente pedir outro
+  valor e re-consultar em seguida — caía na janela de deduplicação de 60
+  segundos e as ofertas novas voltavam com `offerId: null`, impedindo o
+  submit imediato. Agora toda consulta com `loan_value`, `valor_parcela` ou
+  `prazo` persiste as ofertas na hora: a resposta traz `offerId` utilizável
+  no ato, sem espera. A janela de 60s continua valendo só para a repetição
+  da **mesma** consulta sem parâmetros (proteção contra duplo clique).
+</Update>
+
 <Update label="15 de julho de 2026" description="Simulação por valor: prazo default 48 na Unit">
   ## Simulação por valor sem prazo agora funciona na Unit
 
@@ -41,9 +53,10 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
     válido).
   - **C6/Zipdin:** seguem com os ids nativos do `providerData`
     (`id_simulacao` / `proposalNumber`).
-  - `offerId` pode vir `null` num caso raro (re-consulta do mesmo CPF em
-    menos de 60 segundos reaproveita o grupo anterior) — aguarde e
-    re-consulte.
+  - `offerId` pode vir `null` apenas ao repetir a **mesma** consulta sem
+    parâmetros em menos de 60 segundos (dedup de re-clique) — aguarde e
+    re-consulte. Re-simulações com valor/parcela/prazo sempre trazem
+    `offerId` (ver entrada acima).
 </Update>
 
 <Update label="14 de julho de 2026" description="Validação na borda: telefone, email e 422">

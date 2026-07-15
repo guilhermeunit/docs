@@ -806,9 +806,10 @@ banco de verdade e não usa dados reais.
 <Note>
   Use `POST /partners/v1/consultas` (agregada) antes do submit — não a rota
   individual. Só a agregada **persiste as ofertas** e devolve o `offerId` que
-  o submit usa (`offer_ref.offer_id`), igual em produção. Se `offerId` vier
-  `null` (re-consulta do mesmo CPF em menos de 60s reaproveita o grupo
-  anterior), aguarde e re-consulte.
+  o submit usa (`offer_ref.offer_id`), igual em produção. Re-simular com
+  `loan_value`/`valor_parcela`/`prazo` sempre devolve `offerId` novo, mesmo
+  em sequência. Só a repetição da **mesma** consulta sem parâmetros em menos
+  de 60 segundos pode vir com `offerId: null` — aguarde e re-consulte.
 </Note>
 
 ### Collection do Postman
