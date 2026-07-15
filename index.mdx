@@ -214,9 +214,10 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
 </ParamField>
 
 <ParamField body="originador" type="string">
-  Identificador de originação/atribuição. **Default: a identidade do seu
-  cadastro de parceiro** — na maioria dos casos não envie este campo; ele só
-  existe para contratos que operam múltiplas origens sob a mesma chave.
+  Identificador de originação/atribuição, quando aplicável ao seu contrato.
+  Na maioria dos casos, não envie: a consulta usa a carteira padrão de cada
+  banco (na Unit, com fallback automático de carteira quando não há vínculo
+  elegível).
 </ParamField>
 
 <ParamField body="loan_value" type="number">

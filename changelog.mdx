@@ -3,15 +3,16 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
-<Update label="15 de julho de 2026" description="Consultas herdam a identidade do parceiro (originador)">
-  ## Consulta usa a identidade do parceiro por padrão
+<Update label="15 de julho de 2026" description="Unit: fallback automático de carteira na consulta">
+  ## Unit consulta duas carteiras antes de responder "sem proposta"
 
-  Consultas sem o campo `originador` rodavam com a identidade genérica — na
-  Unit isso significava consultar os fundos errados, e um cliente com oferta
-  disponível podia voltar como "sem proposta" para o parceiro. Agora toda
-  consulta assume automaticamente a identidade do seu cadastro (a mesma da
-  atribuição no card); o campo `originador` segue disponível apenas como
-  override explícito.
+  A elegibilidade na Unit é por carteira: um cliente inelegível na carteira
+  padrão (BMP) pode ter oferta na QI Tech — e a consulta parava na primeira,
+  devolvendo "sem proposta" para clientes com crédito disponível. Agora, se
+  nenhum vínculo for elegível na carteira padrão, a consulta tenta
+  automaticamente a QI Tech antes de responder. Nada muda no seu contrato de
+  integração: mesma chamada, mesma resposta — apenas mais ofertas. A
+  formalização usa automaticamente a mesma carteira da oferta.
 </Update>
 
 <Update label="15 de julho de 2026" description="Formalização Unit: link de assinatura sempre entregue">
