@@ -3,6 +3,27 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="16 de julho de 2026" description="Submit C6 e Facta alinhados ao fluxo de produção">
+  ## Formalização C6 e Facta corrigidas + desembolso Unit
+
+  Auditoria completa de paridade contra o fluxo interno de produção:
+
+  - **C6**: o identificador de simulação passou a ser resolvido server-side a
+    partir do `offer_ref.offer_id` da consulta (numérico `offerId` ou o
+    `id_simulacao` nativo — ambos aceitos); tipo de conta agora aceita
+    formatos comuns ("corrente", "poupança", códigos) e é traduzido pro enum
+    do banco; dígitos de agência/conta são normalizados.
+  - **Facta**: conta de recebimento montada com o dígito verificador; estado
+    civil aceita a palavra em português ("solteiro", "casado"...) além do
+    código; o link de formalização agora fica disponível também no
+    `formalize` e no status (antes só na resposta do submit).
+  - **Unit**: dados de desembolso (PIX/conta) corrigidos para o formato do
+    banco — chave PIX de CPF/celular é normalizada automaticamente; contrato,
+    assinatura e status operam sempre na mesma carteira da oferta.
+
+  Nada muda na forma de chamar a API — mesmos campos, mais robustez.
+</Update>
+
 <Update label="16 de julho de 2026" description="Formalização Unit: contrato alinhado ao fluxo de produção">
   ## Submit Unit corrigido — contrato idêntico ao fluxo interno
 
