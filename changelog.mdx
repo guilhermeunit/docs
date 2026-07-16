@@ -3,6 +3,19 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="16 de julho de 2026" description="Formalização Zipdin funcional na API">
+  ## Zipdin: submit e formalização corrigidos
+
+  A formalização Zipdin via API não funcionava: identificadores internos
+  vazavam para o banco, a conveniada ia vazia e datas em formato ISO eram
+  rejeitadas. Corrigido de ponta a ponta: a proposta do pré-registro é
+  resolvida server-side a partir do `offer_ref.offer_id` da consulta, a
+  conveniada é preenchida automaticamente, datas são convertidas ao formato
+  do banco e chave PIX de telefone é substituída pela chave CPF do titular
+  (a Zipdin não aceita PIX por telefone). Mesmo request de sempre — refaça a
+  consulta antes do submit para garantir uma oferta atualizada.
+</Update>
+
 <Update label="16 de julho de 2026" description="Submit C6 e Facta alinhados ao fluxo de produção">
   ## Formalização C6 e Facta corrigidas + desembolso Unit
 
