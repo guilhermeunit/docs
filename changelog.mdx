@@ -3,6 +3,21 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="16 de julho de 2026" description="Status awaiting_signature no polling + robustez">
+  ## Status mais honesto no acompanhamento de propostas
+
+  - `GET /proposals/{id}` agora retorna **`awaiting_signature`** enquanto o
+    contrato aguarda a assinatura do titular (Unit e Facta) — antes o status
+    podia aparecer como `created` ou até `disbursed` nessa fase.
+  - Consulta agregada com tempo-limite explícito: sob lentidão extrema de um
+    banco, a resposta é `502 provider_unavailable` (retryable) no formato do
+    contrato — não mais um 504 genérico do proxy.
+  - Consultas simultâneas do mesmo CPF por integrações diferentes não se
+    misturam mais (cada parceria mantém sua própria proposta).
+  - `cancel`: suportado apenas pela Facta (agora refletido corretamente —
+    demais bancos retornam `501`).
+</Update>
+
 <Update label="16 de julho de 2026" description="Formalização Zipdin funcional na API">
   ## Zipdin: submit e formalização corrigidos
 
