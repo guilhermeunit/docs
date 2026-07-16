@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="16 de julho de 2026" description="Formalização Unit: contrato alinhado ao fluxo de produção">
+  ## Submit Unit corrigido — contrato idêntico ao fluxo interno
+
+  O \`submit\` de propostas Unit podia falhar com \`provider_error\` (500 do
+  banco): o contrato enviado divergia do formato que o fluxo interno usa em
+  produção (taxa em formato errado, vencimento ausente, identificadores
+  trocados e carteira diferente da simulação). Agora o contrato é montado
+  integralmente a partir da oferta persistida na consulta e sai **na mesma
+  carteira em que a oferta foi simulada**. Nada muda no seu request — mesmo
+  \`offer_ref.offer_id\` de sempre.
+</Update>
+
 <Update label="15 de julho de 2026" description="Unit: fallback automático de carteira na consulta">
   ## Unit consulta duas carteiras antes de responder "sem proposta"
 
