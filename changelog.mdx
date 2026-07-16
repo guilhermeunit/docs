@@ -3,36 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
-<Update label="16 de julho de 2026" description="Status awaiting_signature no polling + robustez">
-  ## Status mais honesto no acompanhamento de propostas
+<Update label="16 de julho de 2026" description="Formalização corrigida nos 4 bancos + status honesto">
+  ### Submit Unit — contrato idêntico ao fluxo interno
 
-  - `GET /proposals/{id}` agora retorna **`awaiting_signature`** enquanto o
-    contrato aguarda a assinatura do titular (Unit e Facta) — antes o status
-    podia aparecer como `created` ou até `disbursed` nessa fase.
-  - Consulta agregada com tempo-limite explícito: sob lentidão extrema de um
-    banco, a resposta é `502 provider_unavailable` (retryable) no formato do
-    contrato — não mais um 504 genérico do proxy.
-  - Consultas simultâneas do mesmo CPF por integrações diferentes não se
-    misturam mais (cada parceria mantém sua própria proposta).
-  - `cancel`: suportado apenas pela Facta (agora refletido corretamente —
-    demais bancos retornam `501`).
-</Update>
+  O `submit` de propostas Unit podia falhar com `provider_error` (500 do
+  banco): o contrato enviado divergia do formato que o fluxo interno usa em
+  produção (taxa em formato errado, vencimento ausente, identificadores
+  trocados e carteira diferente da simulação). Agora o contrato é montado
+  integralmente a partir da oferta persistida na consulta e sai **na mesma
+  carteira em que a oferta foi simulada**. Nada muda no seu request — mesmo
+  `offer_ref.offer_id` de sempre.
 
-<Update label="16 de julho de 2026" description="Formalização Zipdin funcional na API">
-  ## Zipdin: submit e formalização corrigidos
-
-  A formalização Zipdin via API não funcionava: identificadores internos
-  vazavam para o banco, a conveniada ia vazia e datas em formato ISO eram
-  rejeitadas. Corrigido de ponta a ponta: a proposta do pré-registro é
-  resolvida server-side a partir do `offer_ref.offer_id` da consulta, a
-  conveniada é preenchida automaticamente, datas são convertidas ao formato
-  do banco e chave PIX de telefone é substituída pela chave CPF do titular
-  (a Zipdin não aceita PIX por telefone). Mesmo request de sempre — refaça a
-  consulta antes do submit para garantir uma oferta atualizada.
-</Update>
-
-<Update label="16 de julho de 2026" description="Submit C6 e Facta alinhados ao fluxo de produção">
-  ## Formalização C6 e Facta corrigidas + desembolso Unit
+  ### Formalização C6 e Facta corrigidas + desembolso Unit
 
   Auditoria completa de paridade contra o fluxo interno de produção:
 
@@ -50,78 +32,34 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
     assinatura e status operam sempre na mesma carteira da oferta.
 
   Nada muda na forma de chamar a API — mesmos campos, mais robustez.
+
+  ### Zipdin: submit e formalização corrigidos
+
+  A formalização Zipdin via API não funcionava: identificadores internos
+  vazavam para o banco, a conveniada ia vazia e datas em formato ISO eram
+  rejeitadas. Corrigido de ponta a ponta: a proposta do pré-registro é
+  resolvida server-side a partir do `offer_ref.offer_id` da consulta, a
+  conveniada é preenchida automaticamente, datas são convertidas ao formato
+  do banco e chave PIX de telefone é substituída pela chave CPF do titular
+  (a Zipdin não aceita PIX por telefone). Mesmo request de sempre — refaça a
+  consulta antes do submit para garantir uma oferta atualizada.
+
+  ### Status mais honesto no acompanhamento de propostas
+
+  - `GET /proposals/{id}` agora retorna **`awaiting_signature`** enquanto o
+    contrato aguarda a assinatura do titular (Unit e Facta) — antes o status
+    podia aparecer como `created` ou até `disbursed` nessa fase.
+  - Consulta agregada com tempo-limite explícito: sob lentidão extrema de um
+    banco, a resposta é `502 provider_unavailable` (retryable) no formato do
+    contrato — não mais um 504 genérico do proxy.
+  - Consultas simultâneas do mesmo CPF por integrações diferentes não se
+    misturam mais (cada parceria mantém sua própria proposta).
+  - `cancel`: suportado apenas pela Facta (agora refletido corretamente —
+    demais bancos retornam `501`).
 </Update>
 
-<Update label="16 de julho de 2026" description="Formalização Unit: contrato alinhado ao fluxo de produção">
-  ## Submit Unit corrigido — contrato idêntico ao fluxo interno
-
-  O \`submit\` de propostas Unit podia falhar com \`provider_error\` (500 do
-  banco): o contrato enviado divergia do formato que o fluxo interno usa em
-  produção (taxa em formato errado, vencimento ausente, identificadores
-  trocados e carteira diferente da simulação). Agora o contrato é montado
-  integralmente a partir da oferta persistida na consulta e sai **na mesma
-  carteira em que a oferta foi simulada**. Nada muda no seu request — mesmo
-  \`offer_ref.offer_id\` de sempre.
-</Update>
-
-<Update label="15 de julho de 2026" description="Unit: fallback automático de carteira na consulta">
-  ## Unit consulta duas carteiras antes de responder "sem proposta"
-
-  A elegibilidade na Unit é por carteira: um cliente inelegível na carteira
-  padrão (BMP) pode ter oferta na QI Tech — e a consulta parava na primeira,
-  devolvendo "sem proposta" para clientes com crédito disponível. Agora, se
-  nenhum vínculo for elegível na carteira padrão, a consulta tenta
-  automaticamente a QI Tech antes de responder. Nada muda no seu contrato de
-  integração: mesma chamada, mesma resposta — apenas mais ofertas. A
-  formalização usa automaticamente a mesma carteira da oferta.
-</Update>
-
-<Update label="15 de julho de 2026" description="Formalização Unit: link de assinatura sempre entregue">
-  ## Formalização Unit devolve o link de assinatura de forma confiável
-
-  Contratos Unit emitidos pela carteira BMP já nascem com o link de assinatura
-  (QiSign), mas uma falha na captura do identificador da CCB fazia o
-  `formalize` responder erro em vez do link em alguns cenários — inclusive ao
-  reformalizar um contrato já existente. Corrigido: o identificador e o link
-  são persistidos na emissão e o `formalize` devolve o link direto
-  (`requires_action` + `signatureUrl`), sem depender de nova chamada ao banco.
-</Update>
-
-<Update label="15 de julho de 2026" description="Re-simulação em sequência sempre traz offerId">
-  ## `offerId` imediato na re-simulação com parâmetros
-
-  O fluxo natural — consultar, ver a oferta máxima, o cliente pedir outro
-  valor e re-consultar em seguida — caía na janela de deduplicação de 60
-  segundos e as ofertas novas voltavam com `offerId: null`, impedindo o
-  submit imediato. Agora toda consulta com `loan_value`, `valor_parcela` ou
-  `prazo` persiste as ofertas na hora: a resposta traz `offerId` utilizável
-  no ato, sem espera. A janela de 60s continua valendo só para a repetição
-  da **mesma** consulta sem parâmetros (proteção contra duplo clique).
-</Update>
-
-<Update label="15 de julho de 2026" description="Simulação por valor: prazo default 48 na Unit">
-  ## Simulação por valor sem prazo agora funciona na Unit
-
-  `loan_value` enviado **sem** `prazo` passava batido na Unit: o valor pedido
-  era ignorado e a resposta trazia a proposta máxima disponível. Agora a Unit
-  assume **48 parcelas** (o mesmo default do nosso formulário interno) e
-  ajusta automaticamente quando o prazo não está disponível — o valor pedido
-  é honrado. Para fixar um prazo específico, envie `prazo` junto. Os dois
-  modos de simulação ("por valor final" e "por parcela") estão documentados
-  nos campos da consulta.
-</Update>
-
-<Update label="15 de julho de 2026" description="GET /banks — lista de instituições bancárias">
-  ## Lista de bancos para conta de recebimento
-
-  Novo endpoint [`GET /partners/v1/banks`](/#lista-de-bancos): devolve os
-  códigos COMPE aceitos em `recebimento.conta_bancaria.banco` —
-  `{"banks": [{"code", "name"}]}`. Use para popular o seletor de banco no seu
-  formulário; a aceitação final por instituição segue validada no submit.
-</Update>
-
-<Update label="15 de julho de 2026" description="offerId nas ofertas e formalização Facta">
-  ## `offerId` em toda oferta + formalização Facta funcional
+<Update label="15 de julho de 2026" description="offerId universal, modos de simulação, fallback de carteira e GET /banks">
+  ### `offerId` em toda oferta + formalização Facta funcional
 
   A consulta agregada agora retorna **`offerId`** em cada oferta — o
   identificador canônico para o `offer_ref.offer_id` do submit, em qualquer
@@ -135,29 +73,62 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
     de produção não retornava.
   - **Unit:** também aceita o `offerId` (o `simulationId` legado continua
     válido).
-  - **C6/Zipdin:** seguem com os ids nativos do `providerData`
-    (`id_simulacao` / `proposalNumber`).
+  - **C6/Zipdin:** na época, seguiam com os ids nativos do `providerData` —
+    desde 16/07 o `offerId` também é resolvido server-side para os dois.
   - `offerId` pode vir `null` apenas ao repetir a **mesma** consulta sem
     parâmetros em menos de 60 segundos (dedup de re-clique) — aguarde e
     re-consulte. Re-simulações com valor/parcela/prazo sempre trazem
-    `offerId` (ver entrada acima).
+    `offerId` (ver abaixo).
+
+  ### `offerId` imediato na re-simulação com parâmetros
+
+  O fluxo natural — consultar, ver a oferta máxima, o cliente pedir outro
+  valor e re-consultar em seguida — caía na janela de deduplicação de 60
+  segundos e as ofertas novas voltavam com `offerId: null`, impedindo o
+  submit imediato. Agora toda consulta com `loan_value`, `valor_parcela` ou
+  `prazo` persiste as ofertas na hora: a resposta traz `offerId` utilizável
+  no ato, sem espera. A janela de 60s continua valendo só para a repetição
+  da **mesma** consulta sem parâmetros (proteção contra duplo clique).
+
+  ### Simulação por valor sem prazo agora funciona na Unit
+
+  `loan_value` enviado **sem** `prazo` passava batido na Unit: o valor pedido
+  era ignorado e a resposta trazia a proposta máxima disponível. Agora a Unit
+  assume **48 parcelas** (o mesmo default do nosso formulário interno) e
+  ajusta automaticamente quando o prazo não está disponível — o valor pedido
+  é honrado. Para fixar um prazo específico, envie `prazo` junto. Os dois
+  modos de simulação ("por valor final" e "por parcela") estão documentados
+  nos campos da consulta.
+
+  ### Unit consulta duas carteiras antes de responder "sem proposta"
+
+  A elegibilidade na Unit é por carteira: um cliente inelegível na carteira
+  padrão (BMP) pode ter oferta na QI Tech — e a consulta parava na primeira,
+  devolvendo "sem proposta" para clientes com crédito disponível. Agora, se
+  nenhum vínculo for elegível na carteira padrão, a consulta tenta
+  automaticamente a QI Tech antes de responder. Nada muda no seu contrato de
+  integração: mesma chamada, mesma resposta — apenas mais ofertas. A
+  formalização usa automaticamente a mesma carteira da oferta.
+
+  ### Formalização Unit devolve o link de assinatura de forma confiável
+
+  Contratos Unit emitidos pela carteira BMP já nascem com o link de assinatura
+  (QiSign), mas uma falha na captura do identificador da CCB fazia o
+  `formalize` responder erro em vez do link em alguns cenários — inclusive ao
+  reformalizar um contrato já existente. Corrigido: o identificador e o link
+  são persistidos na emissão e o `formalize` devolve o link direto
+  (`requires_action` + `signatureUrl`), sem depender de nova chamada ao banco.
+
+  ### Lista de bancos para conta de recebimento
+
+  Novo endpoint [`GET /partners/v1/banks`](/#lista-de-bancos): devolve os
+  códigos COMPE aceitos em `recebimento.conta_bancaria.banco` —
+  `{"banks": [{"code", "name"}]}`. Use para popular o seletor de banco no seu
+  formulário; a aceitação final por instituição segue validada no submit.
 </Update>
 
-<Update label="14 de julho de 2026" description="Validação na borda: telefone, email e 422">
-  ## Validação mais clara na entrada
-
-  - **`telefone`**: formato canônico é **DDD+número (10-11 dígitos)**; o DDI
-    `55` é aceito e removido automaticamente. Fora disso, `422 invalid_input`.
-  - **`email`**: obrigatório em formato válido (o HubCrédito não processa
-    consultas sem e-mail).
-  - **Erros de validação** nas rotas `/partners/v1/*` agora respondem
-    `422` com o envelope documentado
-    (`{"code": "invalid_input", "message", "retryable", "field"}`) — antes
-    saíam como `400` num formato interno.
-</Update>
-
-<Update label="14 de julho de 2026" description="Webhook de autorização do C6">
-  ## Webhook de autorização do C6 (biometria)
+<Update label="14 de julho de 2026" description="Webhook de autorização do C6 + validação na borda">
+  ### Webhook de autorização do C6 (biometria)
 
   O evento [`authorization_result`](/#webhooks) do **C6** entrou no ar. Quando o
   titular conclui a prova de vida, a Unit envia um webhook com as ofertas do C6
@@ -181,10 +152,21 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
     liberadas e o webhook dispara. Configure um `webhook_url` no cadastro sandbox
     para recebê-lo.
   </Info>
+
+  ### Validação mais clara na entrada
+
+  - **`telefone`**: formato canônico é **DDD+número (10-11 dígitos)**; o DDI
+    `55` é aceito e removido automaticamente. Fora disso, `422 invalid_input`.
+  - **`email`**: obrigatório em formato válido (o HubCrédito não processa
+    consultas sem e-mail).
+  - **Erros de validação** nas rotas `/partners/v1/*` agora respondem
+    `422` com o envelope documentado
+    (`{"code": "invalid_input", "message", "retryable", "field"}`) — antes
+    saíam como `400` num formato interno.
 </Update>
 
 <Update label="6 de julho de 2026" description="Lançamento público da API de Parceiros">
-  ## Lançamento público da API de Parceiros
+  ### Lançamento público da API de Parceiros
 
   Primeira versão pública da API `/partners/v1/*`, cobrindo o fluxo completo de
   originação de crédito consignado em múltiplos bancos numa integração única.
