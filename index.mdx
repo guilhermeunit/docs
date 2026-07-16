@@ -529,12 +529,12 @@ campo(s) faltando, antes de qualquer chamada ao banco.
 
 <ParamField body="offer_ref" type="object" required>
   A oferta escolhida — `{ provider, offer_id }`. **Envie o `offerId` que veio
-  em cada oferta da consulta** — ele identifica a oferta persistida e funciona
-  para qualquer banco. Para **Facta** e **Unit**, a API resolve a oferta
-  server-side (na Facta, a simulação é re-executada no momento do submit — o
-  identificador nunca expira). Compat: os ids nativos do `providerData`
-  (`id_simulacao` no C6, `proposalNumber` na Zipdin, `simulationId` na Unit)
-  continuam aceitos.
+  em cada oferta da consulta** — ele identifica a oferta persistida e é
+  resolvido **server-side para os quatro bancos**: a API recupera os
+  identificadores e termos reais da oferta (na Facta, a simulação é
+  re-executada no momento do submit — o identificador nunca expira; na
+  Zipdin, a proposta do pré-registro é localizada automaticamente). Compat:
+  os identificadores nativos do `providerData` continuam aceitos.
 </ParamField>
 
 <ParamField body="titular" type="object" required>
@@ -542,6 +542,10 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   normalizado; a API traduz para o código de cada banco), `nome_mae`, e,
   conforme o banco, `nome_pai`, `nacionalidade`, `estado_civil`,
   `naturalidade_cidade`, `naturalidade_uf`, `exposicao_politica`.
+  **`estado_civil`: envie a palavra em português** — `solteiro`, `casado`,
+  `divorciado`, `viuvo`, `separado` ou `uniao_estavel`; a API traduz para o
+  código/formato de cada banco (não envie códigos numéricos — a numeração
+  varia por banco).
 </ParamField>
 
 <ParamField body="documento" type="object">
@@ -570,6 +574,14 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   `digito_conta`, `tipo_conta`) ou `pix` (`tipo_chave`, `chave`). Enviar os
   dois, ou nenhum, retorna `422`. O campo `banco` usa o **código COMPE** —
   consulte a lista aceita em [`GET /partners/v1/banks`](#lista-de-bancos).
+
+  - `tipo_conta`: `corrente`, `poupanca` ou `salario` (a API traduz para o
+    enum de cada banco). Máscaras em agência/conta/CEP são removidas
+    automaticamente.
+  - `pix.tipo_chave`: `cpf`, `telefone`, `email` ou `aleatoria`. Chave de
+    CPF/celular é normalizada para o formato do banco. **Zipdin não aceita
+    PIX por telefone** — nesse caso o desembolso vai para a chave PIX-CPF do
+    titular.
 </ParamField>
 
 <ParamField body="assinatura" type="object" required>
@@ -662,7 +674,7 @@ um handler de status e um de erro, independente do banco:
 | `status` | Significado |
 |---|---|
 | `created` | Proposta submetida ao banco. |
-| `awaiting_signature` | Link de assinatura disponível, aguardando o cliente. |
+| `awaiting_signature` | Link de assinatura disponível, aguardando o cliente. Aparece na resposta do submit/formalize **e no `GET` de status** enquanto o contrato não é assinado. |
 | `approved` | Proposta aprovada/averbada. |
 | `disbursed` | Crédito liberado. |
 | `paid` | Proposta paga. |
