@@ -542,6 +542,8 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   normalizado; a API traduz para o código de cada banco), `nome_mae`, e,
   conforme o banco, `nome_pai`, `nacionalidade`, `estado_civil`,
   `naturalidade_cidade`, `naturalidade_uf`, `exposicao_politica`.
+  `nacionalidade` e `naturalidade_cidade` vão **por extenso** ("Brasileira",
+  "São Paulo") — a API traduz para o código exigido por cada banco.
   **`estado_civil`: envie a palavra em português** — `solteiro`, `casado`,
   `divorciado`, `viuvo`, `separado` ou `uniao_estavel`; a API traduz para o
   código/formato de cada banco (não envie códigos numéricos — a numeração
@@ -691,7 +693,7 @@ tentar de novo; `field` aponta o campo, quando aplicável.
 |---|:--:|---|
 | `invalid_input` | 422 | Campo faltando ou inválido — detectado antes de chamar o banco. |
 | `offer_expired` | 409 | A taxa/política/margem da oferta mudou desde a consulta. |
-| `provider_rejected` | 422 | O banco recusou a proposta (prazo, margem, assinatura). |
+| `provider_rejected` | 422 | O banco recusou a proposta ou os dados enviados (validação de campo, prazo, margem, assinatura). **Não re-tente com os mesmos dados** — corrija e reenvie. |
 | `authorization_expired` | 409 | Autorização/DATAPREV vencida. |
 | `duplicate` | 409 | Já existe uma proposta em andamento para este titular/banco. |
 | `provider_unavailable` | 502 | Banco fora do ar ou timeout. |

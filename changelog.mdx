@@ -3,6 +3,26 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="17 de julho de 2026" description="Facta: tradução de cidade/nacionalidade + classificação correta de validação">
+  ### Facta traduz cidade e nacionalidade automaticamente
+
+  No submit da Facta, `endereco.cidade` e `titular.naturalidade_cidade`
+  agora são convertidos automaticamente do nome do município para o código
+  que o banco exige, e `titular.nacionalidade` textual ("Brasileira") vira o
+  código do banco — mesma responsabilidade de tradução que a API já exerce
+  para `estado_civil` e `tipo_conta`. Continue enviando os valores humanos
+  canônicos.
+
+  ### Erro de validação não aparece mais como "banco indisponível"
+
+  Rejeições determinísticas de campo pelo banco agora respondem
+  **`provider_rejected` com `retryable: false`** (HTTP 422) — antes saíam
+  como `provider_unavailable`/`retryable: true` (502), o que induzia bots a
+  reapresentar o mesmo request em loop. Se receber `provider_rejected`,
+  corrija os dados; `provider_unavailable` segue reservado para
+  indisponibilidade real (aí sim, retry).
+</Update>
+
 <Update label="16 de julho de 2026" description="Formalização corrigida nos 4 bancos + status honesto">
   ### Submit Unit — contrato idêntico ao fluxo interno
 
