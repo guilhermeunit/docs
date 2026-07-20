@@ -3,6 +3,31 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="20 de julho de 2026" description="offerId garantido em toda resposta + classificação de recusas">
+  ### `offerId` presente em 100% das consultas
+
+  Re-consultas em sequência rápida (menos de 60s) podiam voltar com
+  `offerId: null`, forçando o uso do `simulationId` — que na Unit muda a
+  cada chamada e não era reconhecido no submit. Agora **toda** resposta da
+  consulta agregada traz `offerId`: a mesma oferta mantém o **mesmo id**
+  entre consultas (estável), e ofertas novas ganham id próprio. O caveat dos
+  60s deixa de existir. Use sempre o `offerId` no `offer_ref.offer_id`.
+
+  ### Recusa por estado do cliente não é "banco indisponível"
+
+  Recusas determinísticas como "Cliente possui contrato em andamento" agora
+  respondem **`provider_rejected` / `retryable: false`** (422) com a
+  mensagem real do banco — antes saíam como `provider_unavailable`
+  retryable (502), induzindo retry em loop. Nesses casos, ofereça outro
+  banco ao cliente em vez de repetir o envio.
+
+  ### Um card por jornada + fases fiéis no acompanhamento
+
+  Consultas repetidas do mesmo CPF passaram a reutilizar a mesma proposta
+  interna (o `proposal_id` do submit fica estável entre consultas), e o
+  andamento reflete a fase real (em simulação / sem oferta disponível).
+</Update>
+
 <Update label="17 de julho de 2026" description="Facta: tradução de cidade/nacionalidade + classificação correta de validação">
   ### Facta traduz cidade e nacionalidade automaticamente
 
