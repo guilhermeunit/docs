@@ -3,6 +3,24 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="23 de julho de 2026" description="Formalização Unit (carteira QI Tech) corrigida + instabilidade do banco sinalizada como retryable">
+  ### Formalização Unit em carteira QI Tech não falha mais com 500
+
+  Contratos Unit cuja oferta foi simulada na carteira QI Tech podiam falhar
+  na formalização com `provider_error` (500 do banco): o parceiro bancário
+  passou a exigir o campo `transfer_method` no bloco de desembolso desse
+  caminho. A API agora envia o campo automaticamente — nada muda no seu
+  request. Se você recebeu esse erro, basta reenviar o mesmo `submit`.
+
+  ### Instabilidade do banco agora vem como `provider_unavailable` retryable
+
+  Erros crus de infraestrutura do banco (HTTP 5xx) durante o submit
+  respondiam `provider_error` com `retryable: false` e HTML no corpo da
+  mensagem. Agora respondem **`provider_unavailable` / `retryable: true`**
+  (502) com mensagem limpa — seu bot pode re-tentar em alguns minutos com
+  segurança (o dedup do lado da API impede duplicidade).
+</Update>
+
 <Update label="20 de julho de 2026" description="offerId garantido em toda resposta + classificação de recusas">
   ### `offerId` presente em 100% das consultas
 
