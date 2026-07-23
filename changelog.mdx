@@ -28,6 +28,11 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
   1 ou 2". A API agora converte os dois para o formato que o banco exige —
   mesma responsabilidade de tradução já exercida nos campos da Facta.
   Continue enviando os valores canônicos da documentação.
+
+  Também na Zipdin: `titular.nome_pai` é opcional, mas o banco recusa o
+  submit inteiro se ele vier com nome incompleto (uma palavra só). A API
+  agora omite o campo nesse caso em vez de deixar o envio falhar — envie o
+  nome completo do pai ou simplesmente não envie o campo.
 </Update>
 
 <Update label="20 de julho de 2026" description="offerId garantido em toda resposta + classificação de recusas">
