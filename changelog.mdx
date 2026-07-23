@@ -19,6 +19,15 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
   mensagem. Agora respondem **`provider_unavailable` / `retryable: true`**
   (502) com mensagem limpa — seu bot pode re-tentar em alguns minutos com
   segurança (o dedup do lado da API impede duplicidade).
+
+  ### Zipdin traduz estado civil e nacionalidade automaticamente
+
+  No submit da Zipdin, `titular.estado_civil` canônico (ex.: `uniao_estavel`)
+  era repassado cru ao banco e recusado ("caracteres não permitidos"), e
+  `titular.nacionalidade` textual ou ausente caía em "Favor informar somente
+  1 ou 2". A API agora converte os dois para o formato que o banco exige —
+  mesma responsabilidade de tradução já exercida nos campos da Facta.
+  Continue enviando os valores canônicos da documentação.
 </Update>
 
 <Update label="20 de julho de 2026" description="offerId garantido em toda resposta + classificação de recusas">
