@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="24 de julho de 2026" description="Zipdin: data de vencimento inicial enviada automaticamente">
+  ### Zipdin não recusa mais submit por "data de vencimento inicial"
+
+  Submits Zipdin feitos um tempo depois da consulta podiam ser recusados com
+  "initialDueDate: A data de vencimento inicial é obrigatória!" — o banco
+  passa a exigir a data quando o pré-registro não é recente. A API agora
+  envia a data automaticamente, derivada da própria simulação da oferta.
+  Nada muda no seu request; se você recebeu esse erro, reenvie o mesmo
+  `submit`. Recomendação que continua valendo: formalize o quanto antes
+  após a consulta — ofertas são reprecificadas pelos bancos ao longo do dia.
+</Update>
+
 <Update label="23 de julho de 2026" description="Formalização Unit (carteira QI Tech) corrigida + instabilidade do banco sinalizada como retryable">
   ### Formalização Unit em carteira QI Tech não falha mais com 500
 
