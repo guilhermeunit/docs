@@ -33,6 +33,15 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
   submit inteiro se ele vier com nome incompleto (uma palavra só). A API
   agora omite o campo nesse caso em vez de deixar o envio falhar — envie o
   nome completo do pai ou simplesmente não envie o campo.
+
+  ### `offerId` não some mais em consultas longas
+
+  Em consultas muito demoradas (banco lento, >90s), um blip de conexão
+  interna podia fazer a resposta chegar com `offerId: null` em todas as
+  propostas (e `simulationGroupId: null`) — a persistência das ofertas
+  falhava em cascata. A camada de persistência agora é resiliente a esses
+  blips e o `offerId` volta a ser garantido em toda resposta com proposta.
+  Se você recebeu uma resposta assim, basta re-consultar.
 </Update>
 
 <Update label="20 de julho de 2026" description="offerId garantido em toda resposta + classificação de recusas">
