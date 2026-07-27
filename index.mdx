@@ -598,22 +598,35 @@ Cada bloco é obrigatório, opcional ou irrelevante conforme o banco. Campos
 faltando para o banco-alvo retornam `422` com o campo, antes de qualquer
 chamada externa.
 
-| Bloco | Zipdin | Unit | C6 | Facta |
-|---|:--:|:--:|:--:|:--:|
-| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório |
-| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX |
-| `documento` (RG) | obrigatório | obrigatório | — | obrigatório |
-| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório |
-| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório |
-| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório |
-| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) |
-| `titular.sexo` | obrigatório | opcional | — | obrigatório |
-| `assinatura.ip` | — | obrigatório | — | — |
-| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) |
+| Bloco | Zipdin | Unit | C6 | Facta | Crefaz |
+|---|:--:|:--:|:--:|:--:|:--:|
+| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório |
+| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX | só conta |
+| `documento` (RG) | obrigatório | obrigatório | — | obrigatório | obrigatório |
+| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — |
+| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório |
+| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória |
+| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional |
+| `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório |
+| `assinatura.ip` | — | obrigatório | — | — | — |
+| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) | — |
+| `referencias` (2+) | — | — | — | — | obrigatório³ |
 
 ¹ Na Unit, PIX é bloqueado para propostas roteadas para a carteira BMP — a
 validação recusa `pix` nesse caso, com mensagem clara.
 ² Na Zipdin, `vinculo` cobre apenas cargo/empregador — não inclui renda.
+³ A Crefaz exige **2 referências pessoais** (nome + telefone; `grau`:
+0=cônjuge, 1=parente, 2=amigo — default parente). Envie no bloco
+`referencias` do dataset (os demais bancos ignoram o bloco).
+
+<Note>
+  **Crefaz — fluxo assíncrono (autorização por SMS).** A consulta dispara um
+  SMS DataPrev pro cliente; enquanto ele não autorizar, a consulta volta com
+  ação pendente e um `submit` retorna `provider_unavailable` com
+  `retryable: true` — re-tente após a autorização. Depois da Mesa aprovar, o
+  `formalize` entrega o link de assinatura (Unico) e o status reporta
+  `awaiting_signature`.
+</Note>
 
 ### Envelope de resposta
 

@@ -3,6 +3,27 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="27 de julho de 2026" description="Novo banco: Crefaz (Crédito do Trabalhador) — sob habilitação">
+  ### Crefaz disponível na API (mediante habilitação no contrato)
+
+  A API de Parceiros ganhou suporte completo à **Crefaz** (Crédito do
+  Trabalhador — consignado privado CLT): consulta, submit, formalização,
+  status e sandbox. O banco só aparece pra sua integração quando entrar no
+  allowlist do seu contrato — fale com o time de parceiros da Unit.
+
+  Pontos de atenção do fluxo Crefaz:
+  - **Autorização por SMS (DataPrev)**: a consulta dispara um SMS pro
+    cliente; um `submit` antes da autorização volta `provider_unavailable`
+    com `retryable: true` — re-tente após o cliente autorizar. O webhook
+    `authorization_result` avisa quando a autorização concluir.
+  - **Bloco novo `referencias`**: a Crefaz exige 2 referências pessoais
+    (nome + telefone) no dataset de submissão; os demais bancos ignoram.
+  - **Recebimento só por conta bancária** (sem PIX), com o código COMPE do
+    banco.
+  - Sandbox: CPFs `200.444.666-84` (fluxo completo) e `300.555.777-18`
+    (SMS pendente) no catálogo de homologação.
+</Update>
+
 <Update label="24 de julho de 2026" description="Zipdin: data de vencimento inicial enviada automaticamente">
   ### Zipdin não recusa mais submit por "data de vencimento inicial"
 
