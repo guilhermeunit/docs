@@ -598,19 +598,19 @@ Cada bloco é obrigatório, opcional ou irrelevante conforme o banco. Campos
 faltando para o banco-alvo retornam `422` com o campo, antes de qualquer
 chamada externa.
 
-| Bloco | Zipdin | Unit | C6 | Facta | Crefaz |
-|---|:--:|:--:|:--:|:--:|:--:|
-| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório |
-| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX | só conta |
-| `documento` (RG) | obrigatório | obrigatório | — | obrigatório | obrigatório |
-| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — |
-| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório |
-| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória |
-| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional |
-| `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório |
-| `assinatura.ip` | — | obrigatório | — | — | — |
-| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) | — |
-| `referencias` (2+) | — | — | — | — | obrigatório³ |
+| Bloco | Zipdin | Unit | C6 | Facta | Crefaz | Banco PAN |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório | opcional |
+| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX | só conta | conta (opcional) |
+| `documento` (RG) | obrigatório | obrigatório | — | obrigatório | obrigatório | opcional |
+| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — | obrigatório |
+| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório | — |
+| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória | — |
+| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional | obrigatório (matrícula) |
+| `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório | obrigatório |
+| `assinatura.ip` | — | obrigatório | — | — | — | — |
+| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) | — | — |
+| `referencias` (2+) | — | — | — | — | obrigatório³ | — |
 
 ¹ Na Unit, PIX é bloqueado para propostas roteadas para a carteira BMP — a
 validação recusa `pix` nesse caso, com mensagem clara.
@@ -618,6 +618,16 @@ validação recusa `pix` nesse caso, com mensagem clara.
 ³ A Crefaz exige **2 referências pessoais** (nome + telefone; `grau`:
 0=cônjuge, 1=parente, 2=amigo — default parente). Envie no bloco
 `referencias` do dataset (os demais bancos ignoram o bloco).
+
+<Note>
+  **Banco PAN — fluxo assíncrono (autorização por WhatsApp).** A consulta
+  devolve uma ação pendente com o link de WhatsApp do banco — o cliente
+  precisa enviar a mensagem para autorizar. Enquanto isso, um `submit`
+  retorna `provider_unavailable` com `retryable: true`. Concluída a
+  autorização (webhook `authorization_result` avisa), a próxima consulta
+  devolve as ofertas precificadas com `offerId` — daí em diante o fluxo é o
+  padrão (submit → status → formalize com link digital).
+</Note>
 
 <Note>
   **Crefaz — fluxo assíncrono (autorização por SMS).** A consulta dispara um

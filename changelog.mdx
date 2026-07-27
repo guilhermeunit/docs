@@ -3,6 +3,25 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="27 de julho de 2026" description="Novo banco: Banco PAN (consignado CLT) — sob habilitação">
+  ### Banco PAN disponível na API (mediante habilitação no contrato)
+
+  Suporte completo ao **Banco PAN**: consulta, submit, status, formalização e
+  sandbox. Como a Crefaz, só aparece pra sua integração quando entrar no
+  allowlist do seu contrato.
+
+  Pontos de atenção:
+  - **Autorização por WhatsApp**: a consulta devolve o link; o cliente envia
+    a mensagem para autorizar. `submit` antes disso volta
+    `provider_unavailable`/`retryable: true`; o webhook
+    `authorization_result` avisa quando concluir, e a consulta seguinte traz
+    as ofertas com `offerId`.
+  - `vinculo.matricula` é obrigatória; os termos financeiros são resolvidos
+    server-side (o parceiro nunca envia valores).
+  - Sandbox: CPFs `400.666.888-53` (fluxo completo) e `500.777.999-89`
+    (autorização pendente).
+</Update>
+
 <Update label="27 de julho de 2026" description="Novo banco: Crefaz (Crédito do Trabalhador) — sob habilitação">
   ### Crefaz disponível na API (mediante habilitação no contrato)
 
