@@ -3,6 +3,25 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="12 de agosto de 2026" description="Fluxo de leilão: lookup da proposta por proposal_key">
+  ### Leilão — recupere a proposta e os dados do cliente pela `proposal_key`
+
+  Novo endpoint `GET /partners/v1/auction-proposals/{proposal_key}`: quando o
+  cliente chega pelo link do leilão, você recupera a proposta (valores, taxa,
+  parcelas) e os dados do cliente (nome, CPF, nascimento, empregador,
+  elegibilidade, margem) **antes de pedir qualquer dado na tela** — e
+  pré-preenche a jornada. Sem efeitos colaterais: não cria proposta, não
+  dispara SMS.
+
+  Requer a Unit no allowlist do seu contrato (`403` sem). Erros com semântica:
+  `404` para chave desconhecida/expirada, `502` para falha do banco parceiro.
+
+  **No sandbox**: `sbx-leilao-ok` devolve `200` com um cliente fictício (CPF
+  `11144477735`, o mesmo do catálogo — encadeie lookup → consulta →
+  formalização com um CPF só); `sbx-leilao-expirada` devolve `404`. A
+  collection do Postman ganhou a pasta "Leilão — lookup por proposal_key".
+</Update>
+
 <Update label="30 de julho de 2026" description="Zipdin: causa raiz do erro de 'data de vencimento inicial' resolvida">
   ### Zipdin — submit se recupera sozinho do erro de "data de vencimento inicial"
 

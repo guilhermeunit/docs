@@ -395,6 +395,80 @@ A rota individual devolve um único **envelope** do banco consultado (campos em
   revela se o banco existe). Um nome de banco desconhecido retorna `404`.
 </Note>
 
+## Fluxo de leilão — lookup por `proposal_key`
+
+Quando o cliente chega até você pelo **fluxo de leilão** (link com
+`?proposal_key=...` na URL), você pode recuperar a proposta do leilão e os
+dados do cliente **antes de pedir qualquer coisa na tela** — e pré-preencher a
+jornada inteira:
+
+```text
+GET /partners/v1/auction-proposals/{proposal_key}
+```
+
+Sem efeitos colaterais: a consulta não cria proposta, não dispara SMS e não
+consome limites do cliente. Chame quantas vezes precisar.
+
+```bash
+curl "https://api.somosunit.com.br/partners/v1/auction-proposals/{proposal_key}" \
+  -H "X-Partner-Api-Key: au_xxxxxxxx"
+```
+
+Resposta (`200`):
+
+```json
+{
+  "proposal_key": "fba60e8e-...",
+  "name": "NOME DO CLIENTE",
+  "document_number": "12345678901",
+  "birth_date": "1994-03-10",
+  "admission_date": "2023-05-15",
+  "employer_document_number": "04021583000198",
+  "issuer_registration_number": "000001234",
+  "eligible": true,
+  "consigned_credit_balance": 910.0,
+  "number_of_installments": 12,
+  "political_exposition": "not_exposed",
+  "status": "ongoing",
+  "proposal": {
+    "auction_proposal_key": "6b931708-...",
+    "status": "bid",
+    "proposal_data": {
+      "disbursed_issue_amount": 2500.0,
+      "monthly_interest_rate": 0.0496,
+      "number_of_installments": 12,
+      "simulation": {
+        "installment_face_value": 313.74,
+        "total_iof": 67.3,
+        "monthly_cet": 0.0533
+      }
+    }
+  }
+}
+```
+
+| Status | Quando |
+|---|---|
+| `200` | Chave resolvida — payload acima |
+| `401` | `X-Partner-Api-Key` ausente ou inválida |
+| `403` | Seu contrato não tem a Unit no allowlist (a resposta contém dados pessoais originados na Unit) |
+| `404` | `proposal_key` desconhecida ou expirada |
+| `502` | Falha temporária no banco parceiro — tente novamente |
+
+<Note>
+  A `proposal_key` é uma **capability**: opaca, não-enumerável, e chega até
+  você pelo próprio link do leilão. A expiração do *convite* do leilão não
+  invalida a chave — dias depois ela ainda resolve, o que permite retomar uma
+  jornada abandonada.
+</Note>
+
+<Note>
+  **No sandbox**, use as chaves de teste `sbx-leilao-ok` (retorna `200` com um
+  cliente fictício — CPF `11144477735`, o mesmo do catálogo de cenários, então
+  você encadeia lookup → consulta → formalização com um CPF só) e
+  `sbx-leilao-expirada` (retorna `404`, para testar seu tratamento de erro).
+</Note>
+
 ## Modelo de autorização por banco
 
 Nem todos os bancos aceitam a evidência da mesma forma. Alguns autorizam a
@@ -842,6 +916,11 @@ banco de verdade e não usa dados reais.
 | `99922255561` | Formalização Facta completa: submit → link → paga → cancelada (+ combo Unit/C6) |
 | `10033366632` | Formalização Facta: oferta expirada no submit (`offer_expired`) |
 | `12345678909` | C6 — auto-flip da biometria: a 1ª consulta retorna `requires_action` + link; ~15s depois a consulta passa a retornar as ofertas e dispara o webhook `authorization_result` (configure um `webhook_url` no cadastro sandbox para recebê-lo) |
+
+Além dos CPFs, o fluxo de leilão tem **chaves de teste** próprias
+(`GET /auction-proposals/{key}`): `sbx-leilao-ok` → `200` e
+`sbx-leilao-expirada` → `404` — ver [Fluxo de leilão](#fluxo-de-leilão-lookup-por-proposal-key).
+
 
 <Note>
   Use `POST /partners/v1/consultas` (agregada) antes do submit — não a rota
