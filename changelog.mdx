@@ -3,6 +3,27 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="13 de agosto de 2026" description="Fluxo WhatsApp: link de autorização com colheita de evidência">
+  ### Autorização com colheita de evidência — atendimentos 100% WhatsApp
+
+  Zipdin, Unit e Facta exigem evidência de autorização do titular (IP, geo,
+  dispositivo) — que uma conversa de WhatsApp não tem como colher. Agora a API
+  resolve isso de ponta a ponta:
+
+  - `POST /partners/v1/authorizations` gera um **link de autorização** (72h,
+    idempotente por CPF); o cliente abre a página compacta, lê o termo LGPD e
+    autoriza com um toque — IP (capturado no servidor), geolocalização,
+    dispositivo e versão do termo ficam registrados na Unit.
+  - Webhook **`authorization.completed`** avisa sua integração (ou poll no
+    `GET /authorizations/{id}`, que devolve a evidência completa).
+  - As rotas de consulta aceitam **`authorization_id`** no lugar de
+    `client_ip`: a evidência é injetada no servidor — sua integração nunca
+    transita IP/geo do cliente.
+
+  Testável de ponta a ponta no sandbox (o aceite do cliente pode ser simulado
+  por API). Pasta nova na collection do Postman com os 5 passos.
+</Update>
+
 <Update label="12 de agosto de 2026" description="Fluxo de leilão: lookup da proposta por proposal_key">
   ### Leilão — recupere a proposta e os dados do cliente pela `proposal_key`
 

@@ -503,6 +503,61 @@ do titular:
   se aplica nessa espera — ainda não existe proposta (o submit vem depois da oferta).
 </Note>
 
+## Autorização com colheita de evidência (fluxo WhatsApp)
+
+Atendimentos **100% WhatsApp** não têm como colher a evidência de autorização
+que Zipdin, Unit e Facta exigem (IP do titular, geolocalização, dispositivo).
+Para esses casos, a API gera um **link de autorização**: o cliente abre uma
+página compacta, lê o termo LGPD e autoriza com um toque — a evidência é
+colhida ali (IP real capturado no servidor, geolocalização, dispositivo,
+versão do termo) e fica registrada na Unit como fonte da verdade.
+
+<Steps>
+  <Step title="Crie a sessão">
+    `POST /partners/v1/authorizations` com `{cpf, nome, telefone}` →
+    `{authorization_id, url, expires_at}` (validade 72h). Idempotente: sessão
+    pendente viva do mesmo CPF devolve o **mesmo** link.
+  </Step>
+  <Step title="Envie o link na conversa">
+    O cliente abre a `url`, vê o termo com o nome dele e CPF mascarado, e
+    autoriza com um toque. Localização negada não bloqueia (fica registrada
+    como não-colhida).
+  </Step>
+  <Step title="Receba o sinal">
+    Webhook `authorization.completed` no seu `webhook_url` (mesma assinatura
+    HMAC do `authorization_result`) — ou poll em
+    `GET /partners/v1/authorizations/{authorization_id}`, que devolve o
+    status e, quando autorizada, a `evidence` completa.
+  </Step>
+  <Step title="Consulte com o authorization_id">
+    Nas rotas de consulta, envie `authorization_id` **no lugar de**
+    `client_ip`: a evidência colhida é injetada no servidor — sua integração
+    nunca transita IP/geo do cliente.
+  </Step>
+</Steps>
+
+```bash
+curl -X POST "https://api.somosunit.com.br/partners/v1/authorizations" \
+  -H "X-Partner-Api-Key: au_xxxxxxxx" -H "Content-Type: application/json" \
+  -d '{"cpf": "12345678901", "nome": "NOME DO CLIENTE", "telefone": "27999990000"}'
+```
+
+| Situação | Resposta |
+|---|---|
+| Consulta sem `client_ip` **e** sem `authorization_id` | `422` |
+| `authorization_id` de outro parceiro | `404` |
+| Sessão ainda pendente ou expirada | `409` |
+| `authorization_id` de outro CPF | `422` (evidência é pessoal) |
+| Link aberto após expirar | página instrui a pedir novo link; `POST` gera outra sessão |
+
+<Note>
+  **No sandbox** o fluxo inteiro é testável por API: as rotas `public/*` são
+  abertas, então o passo do cliente pode ser simulado chamando
+  `POST /partners/v1/authorizations/public/{authorization_id}/accept`
+  diretamente com uma evidência de teste. A collection do Postman tem a pasta
+  **"Autorização — colheita de evidência"** com os 5 passos prontos.
+</Note>
+
 ## Formalizando uma proposta
 
 Depois que o cliente escolhe uma oferta, a operação ainda precisa ser
