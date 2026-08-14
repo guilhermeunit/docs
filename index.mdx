@@ -199,6 +199,11 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
   resultado é sempre a **interseção** com o allowlist da sua parceria — pedir um
   banco fora do allowlist não o inclui. Ausente, consulta todo o allowlist.
   (Ignorado na rota individual, que já mira um banco pelo path.)
+
+  Desde 13/08: se **nenhum** nome pedido estiver no seu allowlist (ex.: typo
+  `"pan"` em vez de `"banco_pan"`), a chamada devolve **`422 invalid_input`**
+  (`field: "providers"`) listando os bancos disponíveis do seu contrato — em
+  vez de responder `200` com `providerResults` vazio.
 </ParamField>
 
 <ParamField body="sexo" type="integer" default="0">
@@ -292,6 +297,14 @@ valor) e o resultado detalhado por banco:
   `interestRate`, `totalAmount` e detalhes do vínculo (`employerName`,
   `employerCnpj`, `matricula`), além de `providerData` com campos específicos do
   banco.
+
+  Cada oferta também traz **`adjusted`** (bool) e **`adjustments`** (array de
+  strings legíveis): quando os parâmetros pedidos (`prazo`, `loan_value`,
+  `valor_parcela`) não puderam ser atendidos exatamente, a oferta volta com o
+  melhor possível e o ajuste sinalizado — ex. `"prazo solicitado (36x)
+  indisponível — melhor prazo: 18x"` ou `"valor solicitado acima do máximo
+  disponível"`. Use-os para **não** apresentar a simulação como se fosse
+  exatamente a pedida.
 </ResponseField>
 
 <ResponseField name="providerResults" type="object">
@@ -306,7 +319,13 @@ valor) e o resultado detalhado por banco:
 </ResponseField>
 
 <ResponseField name="employers" type="array">
-  Vínculos empregatícios encontrados para o titular, quando aplicável.
+  Empregadores únicos (por CNPJ) encontrados para o titular: `{cnpj, name,
+  matricula, provider, margin}`. **`margin`** é a margem consignável
+  disponível, apurada **em tempo real na consulta**, normalizada em número
+  (`float`) a partir do que o banco do vínculo informa (Unit e Facta trazem
+  hoje); vem `null` quando o banco não informa margem. Não confundir com o
+  `consigned_credit_balance` do lookup de leilão, que é o retrato no momento
+  em que o convite do leilão foi gerado.
 </ResponseField>
 
 <ResponseField name="elapsedMs" type="integer">
@@ -446,6 +465,25 @@ Resposta (`200`):
   }
 }
 ```
+
+**Semântica dos campos — três esclarecimentos importantes:**
+
+- **`disbursed_issue_amount` na raiz** = valor **pedido pelo trabalhador** no
+  leilão da CTPS. **`proposal.proposal_data.disbursed_issue_amount`** = valor
+  da **proposta enviada** (o lance real). Apresente ao cliente sempre o de
+  `proposal_data`, usando `proposal_data.simulation` para parcela/CET; o da
+  raiz serve para contexto ("você pediu X, conseguimos Y").
+- **`consigned_credit_balance`** = margem disponível **no momento em que o
+  convite do leilão foi gerado** — pode estar defasada. A margem em tempo
+  real é a `employers[].margin` da consulta. Para régua de elegibilidade, use
+  este campo como pré-filtro barato e a margem da consulta como critério
+  final.
+- **Campos de repasse** (`webhook_type`, `alerts`, `rank_position`,
+  `event_datetime`, `inclusion_limit_datetime`, `external_proposal_url` e as
+  chaves internas `*_key`): vêm da instituição como estão, podem vir `null`
+  (o `rank_position` inclusive em produção) e podem mudar sem aviso — não
+  construa lógica obrigatória sobre eles. O que tem prazo é o **lance**
+  (`expiration_datetime`); a chave em si continua resolvendo depois disso.
 
 | Status | Quando |
 |---|---|
@@ -752,17 +790,20 @@ validação recusa `pix` nesse caso, com mensagem clara.
   **Banco PAN — fluxo assíncrono (autorização por WhatsApp).** A consulta
   devolve uma ação pendente com o link de WhatsApp do banco — o cliente
   precisa enviar a mensagem para autorizar. Enquanto isso, um `submit`
-  retorna `provider_unavailable` com `retryable: true`. Concluída a
-  autorização (webhook `authorization_result` avisa), a próxima consulta
-  devolve as ofertas precificadas com `offerId` — daí em diante o fluxo é o
-  padrão (submit → status → formalize com link digital).
+  retorna **`422 invalid_input`** apontando `offer_ref.offer_id` (ainda não
+  existe oferta precificada para submeter — não é um erro retryable de
+  infraestrutura). Concluída a autorização (o webhook `authorization_result`
+  avisa), a próxima consulta devolve as ofertas precificadas com `offerId` —
+  daí em diante o fluxo é o padrão (submit → status → formalize com link
+  digital).
 </Note>
 
 <Note>
   **Crefaz — fluxo assíncrono (autorização por SMS).** A consulta dispara um
   SMS DataPrev pro cliente; enquanto ele não autorizar, a consulta volta com
-  ação pendente e um `submit` retorna `provider_unavailable` com
-  `retryable: true` — re-tente após a autorização. Depois da Mesa aprovar, o
+  ação pendente e um `submit` retorna **`422 invalid_input`** apontando
+  `offer_ref.offer_id` — aguarde o webhook `authorization_result` (ou
+  re-consulte) e submeta com o `offerId` novo. Depois da Mesa aprovar, o
   `formalize` entrega o link de assinatura (Unico) e o status reporta
   `awaiting_signature`.
 </Note>
@@ -971,6 +1012,20 @@ banco de verdade e não usa dados reais.
 | `99922255561` | Formalização Facta completa: submit → link → paga → cancelada (+ combo Unit/C6) |
 | `10033366632` | Formalização Facta: oferta expirada no submit (`offer_expired`) |
 | `12345678909` | C6 — auto-flip da biometria: a 1ª consulta retorna `requires_action` + link; ~15s depois a consulta passa a retornar as ofertas e dispara o webhook `authorization_result` (configure um `webhook_url` no cadastro sandbox para recebê-lo) |
+| `50077799976` | Banco PAN — autorização WhatsApp pendente: `requiresSignature: true` com link `wa.me`; um submit sem `offerId` volta `422 invalid_input` |
+| `40066688809` | Banco PAN — consulta ok pós-autorização (oferta com `offerId`, pré-requisito da formalização) |
+| `30055577741` | Crefaz — SMS DataPrev pendente: `requiresSignature: true` com `signatureUrl: null` (autorização fora de link) |
+| `20044466684` | Crefaz — consulta ok (ofertas com `offerId`, pré-requisito da formalização) |
+
+<Note>
+  **Re-simulação no sandbox** (14/08): `prazo`, `loan_value` e
+  `valor_parcela` alteram os números das ofertas, como em produção. O cenário
+  de cada CPF é o **teto** (valor = margem máxima, parcelas = prazo máximo):
+  pedido acima do teto volta clampado, com o ajuste sinalizado em
+  `adjusted`/`adjustments`. Os números seguem um modelo linear simplificado
+  (sem juros compostos) — use para homologar o fluxo de re-simulação e teto,
+  não para validar precificação.
+</Note>
 
 Além dos CPFs, o fluxo de leilão tem **chaves de teste** próprias
 (`GET /auction-proposals/{key}`): `sbx-leilao-ok` → `200` e

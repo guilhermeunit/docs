@@ -3,6 +3,40 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="14 de agosto de 2026" description="PAN/Crefaz no sandbox, re-simulação, margem em employers[] e correções de doc">
+  ### Sandbox: PAN e Crefaz liberados + re-simulação por parâmetros
+
+  - **Banco PAN e Crefaz entraram no allowlist do sandbox.** CPFs de teste
+    novos (os anteriores tinham dígito verificador inválido e foram
+    substituídos): `50077799976` (PAN — autorização WhatsApp pendente, com
+    link `wa.me`), `40066688809` (PAN — consulta ok), `30055577741` (Crefaz —
+    SMS DataPrev pendente, sem link), `20044466684` (Crefaz — consulta ok).
+  - **Re-simulação no sandbox**: `prazo`, `loan_value` e `valor_parcela`
+    agora alteram os números das ofertas, como em produção. O cenário de cada
+    CPF é o teto (valor = margem máxima, parcelas = prazo máximo); pedido
+    acima volta clampado com `adjusted`/`adjustments`. Modelo linear
+    simplificado — homologa fluxo e teto, não precificação.
+
+  ### Consulta
+
+  - **`employers[].margin`**: a margem consignável apurada em tempo real na
+    consulta, normalizada em número (Unit e Facta informam hoje; `null` nos
+    demais). O array traz `{cnpj, name, matricula, provider, margin}`.
+  - **`adjusted`/`adjustments` por oferta**: ajuste de prazo/valor sinalizado
+    — inclusive o caso "pedi 36x, voltou 18x", que antes passava sem flag.
+  - **`providers` com typo agora é 422**: nenhum nome válido na interseção
+    com o allowlist devolve `422 invalid_input` (`field: providers`) listando
+    os bancos do seu contrato, em vez de `200` com `providerResults` vazio.
+
+  ### Correção de documentação — submit PAN/Crefaz pré-autorização
+
+  As notas de 27/07 diziam que submit antes da autorização concluída voltava
+  `provider_unavailable`/`retryable: true`. **O comportamento real é `422
+  invalid_input`** apontando `offer_ref.offer_id`: aguarde o webhook
+  `authorization_result` (ou re-consulte) e submeta com o `offerId` novo. As
+  notas antigas abaixo foram corrigidas.
+</Update>
+
 <Update label="13 de agosto de 2026" description="Fluxo WhatsApp: link de autorização com colheita de evidência">
   ### Autorização com colheita de evidência — atendimentos 100% WhatsApp
 
@@ -79,14 +113,16 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
 
   Pontos de atenção:
   - **Autorização por WhatsApp**: a consulta devolve o link; o cliente envia
-    a mensagem para autorizar. `submit` antes disso volta
-    `provider_unavailable`/`retryable: true`; o webhook
-    `authorization_result` avisa quando concluir, e a consulta seguinte traz
-    as ofertas com `offerId`.
+    a mensagem para autorizar. `submit` antes disso volta `422 invalid_input`
+    apontando `offer_ref.offer_id` *(corrigido em 14/08 — esta nota dizia
+    `provider_unavailable`/retryable, o que nunca foi o comportamento)*; o
+    webhook `authorization_result` avisa quando concluir, e a consulta
+    seguinte traz as ofertas com `offerId`.
   - `vinculo.matricula` é obrigatória; os termos financeiros são resolvidos
     server-side (o parceiro nunca envia valores).
-  - Sandbox: CPFs `400.666.888-53` (fluxo completo) e `500.777.999-89`
-    (autorização pendente).
+  - Sandbox: CPFs `400.666.888-09` (fluxo completo) e `500.777.999-76`
+    (autorização pendente) — *atualizados em 14/08; os originais tinham
+    dígito verificador inválido*.
 </Update>
 
 <Update label="27 de julho de 2026" description="Novo banco: Crefaz (Crédito do Trabalhador) — sob habilitação">
@@ -99,15 +135,17 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
 
   Pontos de atenção do fluxo Crefaz:
   - **Autorização por SMS (DataPrev)**: a consulta dispara um SMS pro
-    cliente; um `submit` antes da autorização volta `provider_unavailable`
-    com `retryable: true` — re-tente após o cliente autorizar. O webhook
-    `authorization_result` avisa quando a autorização concluir.
+    cliente; um `submit` antes da autorização volta `422 invalid_input`
+    apontando `offer_ref.offer_id` *(corrigido em 14/08 — esta nota dizia
+    `provider_unavailable`/retryable, o que nunca foi o comportamento)*. O
+    webhook `authorization_result` avisa quando a autorização concluir.
   - **Bloco novo `referencias`**: a Crefaz exige 2 referências pessoais
     (nome + telefone) no dataset de submissão; os demais bancos ignoram.
   - **Recebimento só por conta bancária** (sem PIX), com o código COMPE do
     banco.
-  - Sandbox: CPFs `200.444.666-84` (fluxo completo) e `300.555.777-18`
-    (SMS pendente) no catálogo de homologação.
+  - Sandbox: CPFs `200.444.666-84` (fluxo completo) e `300.555.777-41`
+    (SMS pendente) no catálogo de homologação — *o segundo atualizado em
+    14/08; o original tinha dígito verificador inválido*.
 </Update>
 
 <Update label="24 de julho de 2026" description="Zipdin: data de vencimento inicial enviada automaticamente">
