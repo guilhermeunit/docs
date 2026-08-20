@@ -565,7 +565,18 @@ versão do termo) e fica registrada na Unit como fonte da verdade.
     Webhook `authorization.completed` no seu `webhook_url` (mesma assinatura
     HMAC do `authorization_result`) — ou poll em
     `GET /partners/v1/authorizations/{authorization_id}`, que devolve o
-    status e, quando autorizada, a `evidence` completa.
+    status e, quando autorizada, a `evidence` completa:
+
+    | Campo | Significado |
+    |---|---|
+    | `client_ip` | **IP do cliente final que autorizou** — colhido pelo servidor no momento do aceite (fonte primária de evidência) |
+    | `ip_servidor` | Mesmo valor de `client_ip` (nome legado; mantido por compatibilidade) |
+    | `ip_frontend` | IP que o browser do cliente auto-reportou (secundário; pode divergir com VPN/proxy ou vir vazio) |
+    | `user_agent` | User-agent do browser no aceite |
+    | `geo` | `latitude`, `longitude`, `cidade`, `uf` (quando o cliente permitiu localização) |
+    | `device` | `operationalSystem`, `deviceModel`, `deviceName`, `deviceType` |
+    | `termo_versao` | Versão exata do termo LGPD exibido e aceito |
+    | `signature_date` | Timestamp do aceite |
   </Step>
   <Step title="Consulte com o authorization_id">
     Nas rotas de consulta, envie `authorization_id` **no lugar de**
