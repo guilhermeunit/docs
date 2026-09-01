@@ -207,11 +207,7 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
 </ParamField>
 
 <ParamField body="sexo" type="integer" default="0">
-  Sexo do titular na **consulta**. Hoje só a **HubCrédito** usa este campo na
-  simulação: `0` = masculino, qualquer outro valor (use `1`) = feminino — não
-  existe "não informado", o default `0` vai como masculino. Os demais bancos
-  ignoram; se a HubCrédito não está no seu allowlist, pode omitir. (Na
-  formalização o sexo vai em `titular.sexo` como `"M"`/`"F"`.)
+  Sexo do titular, quando exigido por algum banco na simulação.
 </ParamField>
 
 <ParamField body="app_authorization" type="object">
@@ -324,15 +320,12 @@ valor) e o resultado detalhado por banco:
 
 <ResponseField name="employers" type="array">
   Empregadores únicos (por CNPJ) encontrados para o titular: `{cnpj, name,
-  matricula, provider, margin, admission_date, salary}`. **`margin`** é a
-  margem consignável disponível, apurada **em tempo real na consulta**,
-  normalizada em número (`float`) a partir do que o banco do vínculo informa
-  (Unit e Facta trazem hoje). **`admission_date`** (`YYYY-MM-DD`; Unit e
-  Facta) e **`salary`** (`float`; só a Unit) servem para pré-preencher o bloco
-  `vinculo` da formalização — a Facta exige `data_admissao` e `salario` —
-  sem perguntar ao cliente. Qualquer um vem `null` quando o banco do vínculo
-  não informa. Não confundir `margin` com o `consigned_credit_balance` do
-  lookup de leilão, que é o retrato no momento em que o convite foi gerado.
+  matricula, provider, margin}`. **`margin`** é a margem consignável
+  disponível, apurada **em tempo real na consulta**, normalizada em número
+  (`float`) a partir do que o banco do vínculo informa (Unit e Facta trazem
+  hoje); vem `null` quando o banco não informa margem. Não confundir com o
+  `consigned_credit_balance` do lookup de leilão, que é o retrato no momento
+  em que o convite do leilão foi gerado.
 </ResponseField>
 
 <ResponseField name="elapsedMs" type="integer">
@@ -729,9 +722,6 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   `naturalidade_cidade`, `naturalidade_uf`, `exposicao_politica`.
   `nacionalidade` e `naturalidade_cidade` vão **por extenso** ("Brasileira",
   "São Paulo") — a API traduz para o código exigido por cada banco.
-  `nacionalidade` é **case-insensitive e tolerante**: `br`, `BR`,
-  `Brasileiro`, `Brasileira` ou vazio são todos tratados como brasileiro em
-  todos os bancos; só texto contendo "estrangeir" é tratado como estrangeiro.
   **`estado_civil`: envie a palavra em português** — `solteiro`, `casado`,
   `divorciado`, `viuvo`, `separado` ou `uniao_estavel`; a API traduz para o
   código/formato de cada banco (não envie códigos numéricos — a numeração

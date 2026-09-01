@@ -3,28 +3,6 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
-<Update label="1 de setembro de 2026" description="employers[] com admissão e salário; nacionalidade tolerante; mapeamento do sexo">
-  ### Consulta — `employers[]` ganha `admission_date` e `salary`
-
-  Além de `margin`, cada empregador da consulta agora traz **`admission_date`**
-  (`YYYY-MM-DD`; Unit e Facta) e **`salary`** (`float`; Unit). Use para
-  pré-preencher o bloco `vinculo` da formalização — a Facta exige
-  `data_admissao` e `salario` — sem pedir ao cliente o que a consulta já
-  trouxe. `null` quando o banco do vínculo não informa.
-
-  ### Formalização — `nacionalidade` case-insensitive em todos os bancos
-
-  `br`, `BR`, `Brasileiro`, `Brasileira` ou vazio são tratados como
-  brasileiro (Facta/Zipdin já normalizavam; a Unit passou a normalizar
-  também — antes recebia o texto cru). Só texto contendo "estrangeir" é
-  tratado como estrangeiro.
-
-  ### Documentado: o `sexo` inteiro da consulta
-
-  Só a HubCrédito usa: `0` = masculino, qualquer outro valor = feminino. Os
-  demais bancos ignoram — se a HubCrédito não está no seu allowlist, omita.
-</Update>
-
 <Update label="14 de agosto de 2026" description="PAN/Crefaz no sandbox, re-simulação, margem em employers[] e correções de doc">
   ### Sandbox: PAN e Crefaz liberados + re-simulação por parâmetros
 
