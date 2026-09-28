@@ -3,6 +3,26 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="28 de setembro de 2026" description="Resolução de pendências de formalização (V8)">
+  ### Pendências de formalização — novas rotas
+
+  Quando o banco trava a operação depois da assinatura pedindo uma correção
+  (documento reprovado, chave PIX recusada), você resolve pela API:
+
+  - `GET /partners/v1/pendencies` — fila de pendências, com o motivo, o que o
+    banco aceita (`requirements`) e o contato do cliente.
+  - `POST /partners/v1/pendencies/{id}/files` — envia o documento direto ao
+    banco e devolve um `file_id`.
+  - `POST /partners/v1/pendencies/{id}/resolve` — reenvia os documentos ou a
+    nova chave PIX, com `Idempotency-Key`.
+
+  Disponível para a **V8**, para parceiros com o escopo `pendencies`, que vale
+  para pendências de qualquer proposta. Novos eventos de webhook:
+  `pendency.opened`, `pendency.refused`, `pendency.resolved` e
+  `pendency.canceled`. Ver
+  [Resolvendo pendências](/#resolvendo-pendências-de-formalização).
+</Update>
+
 <Update label="1 de setembro de 2026" description="employers[] com admissão e salário; nacionalidade tolerante; mapeamento do sexo">
   ### Consulta — `employers[]` ganha `admission_date` e `salary`
 

@@ -10,6 +10,8 @@ description: "Integre seu produto à Unit e origine propostas de crédito consig
   [Formalizando uma proposta](#formalizando-uma-proposta) — já estão no ar. O
   **ato de assinar** continua acontecendo no fluxo regulado do próprio banco
   (ZipSign, biometria, DATAPREV); a API entrega o link para o cliente completar.
+  A **resolução de pendências de formalização** (V8) também está no ar — ver
+  [Resolvendo pendências](#resolvendo-pendências-de-formalização).
   Para obter credenciais (API key e configuração de webhook), fale com o time de
   parceiros da Unit.
 </Note>
@@ -992,6 +994,170 @@ Resposta de `formalize`, com o link de assinatura pronto:
 }
 ```
 
+## Resolvendo pendências de formalização
+
+Depois da assinatura, o banco pode travar a operação pedindo uma correção ao
+cliente: um documento reprovado na análise ou uma chave PIX recusada. Com
+estas rotas você vê essas pendências e reenvia a correção direto ao banco.
+
+<Note>
+  Disponível para a **V8**. O acesso depende do escopo `pendencies`, liberado
+  pela Unit no cadastro do seu parceiro. Com ele, você vê e resolve as
+  pendências de **qualquer** proposta, não só das que você originou. Sem o
+  escopo, as rotas devolvem `403 forbidden`. As pendências ainda não estão no
+  sandbox.
+</Note>
+
+<Steps>
+  <Step title="Descubra a pendência">
+    Receba o webhook `pendency.opened` ou consulte a fila com
+    `GET /pendencies`.
+  </Step>
+  <Step title="Colete a correção com o cliente">
+    O campo `requirements` diz exatamente o que o banco aceita: tipos de
+    documento, lados, formatos e tipos de chave PIX.
+  </Step>
+  <Step title="Envie os documentos">
+    Para pendência de documento, envie cada arquivo em
+    `POST /pendencies/{id}/files` e guarde o `file_id` devolvido.
+  </Step>
+  <Step title="Resolva">
+    Chame `POST /pendencies/{id}/resolve` com os `file_id` ou com a nova chave
+    PIX.
+  </Step>
+  <Step title="Acompanhe">
+    O banco analisa. Você recebe `pendency.resolved` quando a operação andar,
+    ou `pendency.refused` e um novo `pendency.opened` se o banco recusar de
+    novo.
+  </Step>
+</Steps>
+
+### Rotas
+
+| Rota | Uso |
+|---|---|
+| `GET /partners/v1/pendencies` | Fila de pendências. Filtros: `status` (default `open,submitted`), `provider`, `limit` (até 200) e `offset`. |
+| `GET /partners/v1/pendencies/{id}` | Uma pendência. |
+| `POST /partners/v1/pendencies/{id}/files` | Envia um documento ao banco (multipart, campo `file`). Devolve o `file_id`. |
+| `POST /partners/v1/pendencies/{id}/resolve` | Reenvia a correção ao banco. Exige o header `Idempotency-Key`. |
+
+### A pendência
+
+```json
+{
+  "id": "7b1c0d9e-4f2a-4c11-9d7e-2b8f3a6c5e10",
+  "proposal_id": "2233167",
+  "provider": "v8",
+  "type": "documents",
+  "status": "open",
+  "reason": {
+    "code": "document_rejected",
+    "provider_code": "document:other",
+    "message": "Documento reprovado na analise automática."
+  },
+  "resolvable": true,
+  "requirements": {
+    "documents": [
+      { "document_type": "rg", "sides": ["front", "back"] },
+      { "document_type": "cnh", "sides": ["both"] },
+      { "document_type": "other", "sides": ["front", "back"] }
+    ],
+    "formats": ["application/pdf", "image/jpeg", "image/png"],
+    "max_bytes": 10485760
+  },
+  "attempts": 0,
+  "last_outcome": null,
+  "files": [],
+  "client": { "name": "MARIA DE EXEMPLO SILVA", "cpf": "11144477735", "phone": "11987654321" },
+  "opened_at": "2026-09-28T13:02:11+00:00",
+  "submitted_at": null,
+  "closed_at": null,
+  "updated_at": "2026-09-28T13:02:11+00:00"
+}
+```
+
+| `type` | O que o banco pediu | `reason.code` |
+|---|---|---|
+| `documents` | Novo documento de identidade | `document_rejected` |
+| `payment_data` | Nova chave PIX (a V8 não aceita conta/TED) | `pix_key_not_found`, `pix_holder_mismatch`, `pix_payment_failed` |
+| `other` | Algo que não se corrige pela API (`resolvable: false`) | `other` |
+
+| `status` | Significado |
+|---|---|
+| `open` | Aguardando a correção. |
+| `submitted` | Correção reenviada; o banco está analisando. |
+| `resolved` | A operação saiu da pendência. |
+| `refused` | O banco sinalizou de novo; uma nova pendência foi aberta. |
+| `canceled` | A operação terminou sem resolver (cancelada ou recusada). |
+
+`client` traz os dados de contato do cliente para você pedir a correção.
+`requirements` só vem preenchido enquanto a pendência está `open` ou
+`submitted`.
+
+### Enviando documentos
+
+```bash
+curl -X POST https://api.somosunit.com.br/partners/v1/pendencies/{id}/files \
+  -H "X-Partner-Api-Key: $API_KEY" \
+  -F "file=@rg-frente.jpg;type=image/jpeg"
+```
+
+```json
+{ "file_id": "fil_8f3a2c0b9d1e4f5a", "filename": "rg-frente.jpg", "size": 482113, "uploaded_at": "2026-09-28T13:10:02+00:00" }
+```
+
+Um arquivo por chamada: PDF, JPEG ou PNG, até 10 MB, no máximo 10 arquivos
+por pendência. O arquivo vai direto ao banco — a Unit não guarda o documento.
+O `file_id` só vale para a pendência em que foi enviado.
+
+### Resolvendo
+
+Envie **exatamente um** bloco, conforme o `type` da pendência, com uma
+`Idempotency-Key` nova (8 a 80 caracteres) a cada tentativa:
+
+<CodeGroup>
+
+```json Documentos
+{
+  "documents": [
+    { "file_id": "fil_8f3a2c0b9d1e4f5a", "document_type": "rg", "side": "front" },
+    { "file_id": "fil_91c07e6d2a3b4c5d", "document_type": "rg", "side": "back" }
+  ]
+}
+```
+
+```json Chave PIX
+{
+  "payment_data": {
+    "pix": { "key": "maria@exemplo.com", "key_type": "email" }
+  }
+}
+```
+
+</CodeGroup>
+
+- `document_type`/`side` aceitos pela V8: `rg` com `front` e `back`; `cnh`
+  com `both` (um arquivo com as duas faces); `other` com `front` e `back`.
+- `key_type`: `cpf`, `email`, `phone` ou `random`. A chave precisa ser do
+  próprio cliente — o banco confere a titularidade.
+
+| Resposta | Significado | O que fazer |
+|---|---|---|
+| `200` + pendência `submitted` | O banco aceitou o reenvio. | Aguardar o webhook. |
+| `202` + `last_outcome: "unknown_outcome"` | O banco não respondeu a tempo e **pode ter aplicado**. | Consultar pelo `GET` antes de reenviar. |
+| `422 provider_rejected` | O banco recusou o dado; a pendência continua `open`. | Pedir outro dado ao cliente. |
+| `409 pix_key_already_refused` | Essa chave já foi recusada nesta operação. | Pedir outra chave. |
+| `409 pendency_not_open` | A operação já saiu da pendência. | Nada a fazer. |
+| `409 too_many_attempts` | 5 reenvios já feitos. | O caso segue com a Unit. |
+| `422 invalid_input` | Corpo, `file_id` ou combinação inválida (`field` aponta o campo). | Corrigir e reenviar. |
+| `502 provider_unavailable` | Banco fora do ar; nada foi aplicado (`retryable: true`). | Tentar de novo. |
+
+<Warning>
+  Repetir a chamada com a **mesma** `Idempotency-Key` devolve o desfecho já
+  registrado, sem reenviar ao banco. Depois de um `202`, **não reenvie às
+  cegas**: consulte a pendência — o banco pode ter recebido a correção.
+</Warning>
+
 ## Lista de bancos
 
 `GET /partners/v1/banks` (autenticado pela mesma API key) devolve as
@@ -1152,6 +1318,36 @@ confirmação são reenviadas com backoff.
   Trate os webhooks de forma idempotente — deduplique pela combinação
   `(external_reference, event)`.
 </Note>
+
+### Eventos de pendência
+
+Parceiros com o escopo `pendencies` recebem, na mesma URL e com a mesma
+assinatura, os eventos `pendency.opened`, `pendency.refused`,
+`pendency.resolved` e `pendency.canceled`. O payload **não** traz dados do
+cliente — busque a pendência pelo `GET`:
+
+```json
+{
+  "event": "pendency.opened",
+  "pendency": {
+    "id": "7b1c0d9e-4f2a-4c11-9d7e-2b8f3a6c5e10",
+    "proposal_id": "2233167",
+    "provider": "v8",
+    "type": "documents",
+    "status": "open",
+    "reason": {
+      "code": "document_rejected",
+      "provider_code": "document:other",
+      "message": "Documento reprovado na analise automática."
+    },
+    "opened_at": "2026-09-28T13:02:11+00:00",
+    "closed_at": null
+  },
+  "timestamp": "2026-09-28T13:02:12+00:00"
+}
+```
+
+Deduplique pela combinação `(pendency.id, event)`.
 
 <Tip>
   Dúvidas sobre a integração? Fale com o time de parceiros da Unit.

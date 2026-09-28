@@ -1317,6 +1317,213 @@
       ]
     },
     {
+      "name": "Pendências (V8)",
+      "description": "Resolução de pendências de formalização (documento reprovado, chave PIX recusada). Exige o escopo `pendencies` no cadastro do parceiro — vale para pendências de qualquer proposta. Ainda não disponível no sandbox.",
+      "item": [
+        {
+          "name": "GET /partners/v1/pendencies (fila)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/pendencies?status=open,submitted&provider=v8&limit=50&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "pendencies"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "open,submitted"
+                },
+                {
+                  "key": "provider",
+                  "value": "v8"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Fila de pendências com motivo, `requirements` (o que o banco aceita) e contato do cliente. `status` aceita open, submitted, resolved, refused e canceled."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /partners/v1/pendencies/:pendency_id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/pendencies/:pendency_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "pendencies",
+                ":pendency_id"
+              ],
+              "variable": [
+                {
+                  "key": "pendency_id",
+                  "value": "",
+                  "description": "id da pendência (campo `id` da fila)"
+                }
+              ]
+            },
+            "description": "Uma pendência."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /partners/v1/pendencies/:pendency_id/files (documento)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/pendencies/:pendency_id/files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "pendencies",
+                ":pendency_id",
+                "files"
+              ],
+              "variable": [
+                {
+                  "key": "pendency_id",
+                  "value": "",
+                  "description": "id da pendência (campo `id` da fila)"
+                }
+              ]
+            },
+            "description": "Envia UM arquivo (PDF/JPEG/PNG, até 10 MB) direto ao banco e devolve o `file_id` usado no resolve. A Unit não guarda o documento."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /partners/v1/pendencies/:pendency_id/resolve (documentos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "description": "nova a cada tentativa; repetir a mesma devolve o desfecho registrado"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documents\": [\n    {\n      \"file_id\": \"fil_...\",\n      \"document_type\": \"rg\",\n      \"side\": \"front\"\n    },\n    {\n      \"file_id\": \"fil_...\",\n      \"document_type\": \"rg\",\n      \"side\": \"back\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/pendencies/:pendency_id/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "pendencies",
+                ":pendency_id",
+                "resolve"
+              ],
+              "variable": [
+                {
+                  "key": "pendency_id",
+                  "value": "",
+                  "description": "id da pendência (campo `id` da fila)"
+                }
+              ]
+            },
+            "description": "Reenvia os documentos. V8: rg front/back; cnh both (um arquivo com as duas faces); other front/back. 200 = aceito; 202 = resultado incerto (consulte antes de reenviar)."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /partners/v1/pendencies/:pendency_id/resolve (chave PIX)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "description": "nova a cada tentativa; repetir a mesma devolve o desfecho registrado"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_data\": {\n    \"pix\": {\n      \"key\": \"maria@exemplo.com\",\n      \"key_type\": \"email\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/pendencies/:pendency_id/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "pendencies",
+                ":pendency_id",
+                "resolve"
+              ],
+              "variable": [
+                {
+                  "key": "pendency_id",
+                  "value": "",
+                  "description": "id da pendência (campo `id` da fila)"
+                }
+              ]
+            },
+            "description": "Reenvia a chave PIX (cpf, email, phone ou random). A chave precisa ser do cliente; chave já recusada na operação devolve 409 pix_key_already_refused."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Stream de ofertas (SSE)",
       "item": [
         {
