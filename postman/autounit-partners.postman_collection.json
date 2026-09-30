@@ -1074,6 +1074,173 @@
           "response": []
         },
         {
+          "name": "POST /partners/v1/proposals (submit V8 — só PIX; link já na resposta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/proposals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "proposals"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"v8\",\n    \"offer_id\": \"<offer_id da consulta do CPF 80011122250>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"800.111.222-50\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"SOLTEIRO\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"80011122250\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Submit V8 (Crédito Privado CLT): desembolso só por PIX (`recebimento.pix`; conta bancária devolve 422), RG real em `documento.numero`, sem `vinculo`/`referencias`/`assinatura`. O link de formalização vem NA RESPOSTA (`status: awaiting_signature`, `action.url`, `provider_data.formalization_url`). No sandbox, consulte antes o CPF 80011122250 e use o `offerId` retornado."
+          },
+          "response": [
+            {
+              "name": "201 — submit ok (Facta)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"proposal_id\": \"123\",\n  \"provider\": \"facta\",\n  \"status\": \"ok\",\n  \"action\": null,\n  \"offer\": null,\n  \"error\": null,\n  \"provider_data\": null,\n  \"updated_at\": \"2026-07-06T21:27:18.495375+00:00\"\n}"
+            },
+            {
+              "name": "422 — bloco obrigatório ausente",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"campo obrigatório ausente: nome_pai\",\n    \"retryable\": false,\n    \"field\": \"nome_pai\"\n  }\n}"
+            },
+            {
+              "name": "422 — oferta Unit não resolvida (server-side)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/partners/v1/proposals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "partners",
+                    "v1",
+                    "proposals"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"facta\",\n    \"offer_id\": \"<offer_id da consulta — §7/§8.1>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"999.222.555-61\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nome_pai\": \"PEDRO DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"CASADO\",\n    \"naturalidade_cidade\": \"SAO PAULO\",\n    \"naturalidade_uf\": \"SP\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"vinculo\": {\n    \"cnpj_empregador\": \"00000000000191\",\n    \"nome_empregador\": \"EMPRESA SANDBOX LTDA\",\n    \"cargo\": \"ANALISTA\",\n    \"salario\": 3000.0,\n    \"margem\": 400.0,\n    \"data_admissao\": \"2018-01-01\",\n    \"matricula\": \"000001\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"99922255561\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\",\n    \"tipo_envio\": \"sms\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Submete a proposta ao banco (cria). `offer_ref.offer_id` é o `simulationId`/`offer_id` devolvido pela consulta (§7) para a oferta escolhida — para Unit, a API resolve os termos financeiros server-side a partir dele (§8.1). Blocos obrigatórios variam por banco — ver tabela em §8.1 do guia."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"detail\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"oferta Unit não resolvida — termos financeiros indisponíveis para o CPF/offer_id\",\n    \"retryable\": false,\n    \"field\": \"offer_ref.offer_id\"\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "POST /partners/v1/proposals/:proposal_id/formalize",
           "request": {
             "method": "POST",

@@ -843,19 +843,19 @@ Cada bloco é obrigatório, opcional ou irrelevante conforme o banco. Campos
 faltando para o banco-alvo retornam `422` com o campo, antes de qualquer
 chamada externa.
 
-| Bloco | Zipdin | Unit | C6 | Facta | Crefaz | Banco PAN |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório | opcional |
-| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX | só conta | conta (opcional) |
-| `documento` (RG) | obrigatório | obrigatório | — | obrigatório | obrigatório | opcional |
-| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — | obrigatório |
-| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório | — |
-| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória | — |
-| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional | obrigatório (matrícula) |
-| `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório | obrigatório |
-| `assinatura.ip` | — | obrigatório | — | — | — | — |
-| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) | — | — |
-| `referencias` (2+) | — | — | — | — | obrigatório³ | — |
+| Bloco | Zipdin | Unit | C6 | Facta | Crefaz | Banco PAN | V8 |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| `endereco` | obrigatório | obrigatório | obrigatório | obrigatório | obrigatório | opcional | obrigatório |
+| `recebimento` | conta ou PIX | conta ou PIX¹ | só conta | conta ou PIX | só conta | conta (opcional) | **só PIX**⁴ |
+| `documento` (RG) | obrigatório | obrigatório | — | obrigatório | obrigatório | opcional | obrigatório (RG real)⁵ |
+| `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — | obrigatório | obrigatório |
+| `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório | — | obrigatório |
+| `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória | — | — |
+| `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional | obrigatório (matrícula) | — |
+| `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório | obrigatório | obrigatório |
+| `assinatura.ip` | — | obrigatório | — | — | — | — | — |
+| `assinatura.tipo_envio` | — | — | — | obrigatório (envio do link) | — | — | — |
+| `referencias` (2+) | — | — | — | — | obrigatório³ | — | — |
 
 ¹ Na Unit, PIX é bloqueado para propostas roteadas para a carteira BMP — a
 validação recusa `pix` nesse caso, com mensagem clara.
@@ -863,6 +863,14 @@ validação recusa `pix` nesse caso, com mensagem clara.
 ³ A Crefaz exige **2 referências pessoais** (nome + telefone; `grau`:
 0=cônjuge, 1=parente, 2=amigo — default parente). Envie no bloco
 `referencias` do dataset (os demais bancos ignoram o bloco).
+⁴ A V8 desembolsa **somente por PIX**: `recebimento.pix` obrigatório;
+`conta_bancaria` sem PIX devolve `422` com `field: "recebimento.pix"`.
+`tipo_chave` textual: `cpf`, `telefone`, `email` ou `aleatoria`. A chave
+precisa ser do titular — chave de terceiro passa no submit e vira pendência
+(`pix_holder_mismatch`) na liquidação.
+⁵ A V8 recusa RG com número zerado (`422`, `field: "documento.numero"`);
+CNH não é aceita pela API. Estado civil aceito: solteiro, casado,
+divorciado, viuvo, separado (vira divorciado); união estável vira casado.
 
 <Note>
   **Banco PAN — fluxo assíncrono (autorização por WhatsApp).** A consulta
@@ -884,6 +892,26 @@ validação recusa `pix` nesse caso, com mensagem clara.
   re-consulte) e submeta com o `offerId` novo. Depois da Mesa aprovar, o
   `formalize` entrega o link de assinatura (Unico) e o status reporta
   `awaiting_signature`.
+</Note>
+
+<Note>
+  **V8 — consentimento automático, link já no submit.** A V8 tem um
+  consentimento próprio, que a Unit registra **na própria consulta** com a
+  evidência da autorização que você já envia (`authorization_id` ou
+  `client_ip`) — nada a fazer do seu lado. A margem chega em segundos, por
+  webhook da V8: a consulta aguarda até 15 s e, se não chegar, devolve o
+  banco em `pending` com o motivo `V8: consentimento aceito — consultando
+  margem` — **consulte novamente** o CPF (não há webhook `authorization_result`
+  para a V8). O consentimento vale 30 dias.
+
+  Na contratação, o link de formalização vem **na resposta do submit**:
+  `status: "awaiting_signature"`, `action.url` e
+  `provider_data.formalization_url`. O `formalize` devolve o mesmo link e o
+  `GET` de status mantém `awaiting_signature` com `action.url` até o cliente
+  assinar. Depois da assinatura a operação entra em análise e o status vai
+  direto para `disbursed` (o crédito ainda **não** caiu nesse ponto) e, ao
+  final, `paid`. Pendências de documento ou PIX após a assinatura chegam pelo
+  webhook `pendency.opened`.
 </Note>
 
 ### Envelope de resposta
@@ -948,8 +976,8 @@ um handler de status e um de erro, independente do banco:
 |---|---|
 | `created` | Proposta submetida ao banco. |
 | `awaiting_signature` | Link de assinatura disponível, aguardando o cliente. Aparece na resposta do submit/formalize **e no `GET` de status** enquanto o contrato não é assinado. |
-| `approved` | Proposta aprovada/averbada. |
-| `disbursed` | Crédito liberado. |
+| `approved` | Proposta aprovada/averbada. Não ocorre na V8: lá a assinatura acontece dentro da formalização e, assinada, o status já é `disbursed`. |
+| `disbursed` | Crédito liberado. Na V8: cliente assinou e a operação está em análise — o pagamento só é confirmado em `paid`. |
 | `paid` | Proposta paga. |
 | `rejected` | Proposta negada. |
 | `canceled` | Proposta cancelada. |
@@ -1258,6 +1286,10 @@ banco de verdade e não usa dados reais.
 | `40066688809` | Banco PAN — consulta ok pós-autorização (oferta com `offerId`, pré-requisito da formalização) |
 | `30055577741` | Crefaz — SMS DataPrev pendente: `requiresSignature: true` com `signatureUrl: null` (autorização fora de link) |
 | `20044466684` | Crefaz — consulta ok (ofertas com `offerId`, pré-requisito da formalização) |
+| `80011122250` | V8 — margem ok: 2 ofertas (R$ 5.000 e R$ 4.800, 24x de R$ 350, com e sem seguro); fluxo completo na formalização: submit com link na resposta → formalize → status `paid` → cancel |
+| `80344455505` | V8 — consentimento pendente: `requires_action` com `action.type: "dataprev"` e sem URL; submit devolve `awaiting_authorization` |
+| `80122233336` | V8 — consentimento aceito, sem margem (`no_offers`) |
+| `80233344411` | V8 — rejeitado pelo motor de crédito (`no_offers` com o motivo da V8) |
 
 <Note>
   **Re-simulação no sandbox** (14/08): `prazo`, `loan_value` e

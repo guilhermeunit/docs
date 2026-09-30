@@ -3,6 +3,31 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="30 de setembro de 2026" description="V8 na formalização: matriz, link no submit, status e sandbox">
+  ### V8 — documentação da contratação
+
+  A matriz de exigência ganhou a coluna da V8: endereço, RG real, estado
+  civil, nome da mãe, sexo e **PIX obrigatório** (conta bancária não é
+  aceita). Vínculo, referências, naturalidade e `assinatura.*` não são
+  exigidos. Ver [Matriz de exigência](/#matriz-de-exigência-por-banco).
+
+  ### V8 — link de formalização já no submit e `awaiting_signature` no status
+
+  O `POST /partners/v1/proposals` da V8 passa a devolver
+  `status: "awaiting_signature"` com `action.url` (antes vinha `created`
+  com o link só em `provider_data.formalization_url`). O `GET` de status
+  mantém `awaiting_signature` e o link até o cliente assinar; depois vai
+  para `disbursed` (assinado, em análise) e `paid`. `approved` não ocorre na
+  V8. Ver a nota da V8 em [Formalizando uma proposta](/#formalizando-uma-proposta).
+
+  ### Sandbox — V8 liberada na chave pública
+
+  Os CPFs `80011122250` (fluxo completo), `80344455505` (consentimento
+  pendente), `80122233336` (sem margem) e `80233344411` (rejeitado) já
+  respondem pela V8 na chave pública — antes a consulta devolvia `422`
+  "nenhum provider de ['v8'] está no seu contrato".
+</Update>
+
 <Update label="30 de setembro de 2026" description="Disparo da autorização da Crefaz pelo parceiro; recusa da Crefaz no webhook">
   ### Crefaz — nova rota para disparar o SMS do DataPrev
 
