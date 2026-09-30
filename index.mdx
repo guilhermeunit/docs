@@ -871,6 +871,8 @@ precisa ser do titular — chave de terceiro passa no submit e vira pendência
 ⁵ A V8 recusa RG com número zerado (`422`, `field: "documento.numero"`);
 CNH não é aceita pela API. Estado civil aceito: solteiro, casado,
 divorciado, viuvo, separado (vira divorciado); união estável vira casado.
+O bloco `assinatura` (com `ip`) é obrigatório no request para **todos** os
+bancos — a V8 só não usa `tipo_envio`.
 
 <Note>
   **Banco PAN — fluxo assíncrono (autorização por WhatsApp).** A consulta

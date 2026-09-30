@@ -8,8 +8,10 @@ description: "Novidades e mudanças na API de Parceiros da Unit"
 
   A matriz de exigência ganhou a coluna da V8: endereço, RG real, estado
   civil, nome da mãe, sexo e **PIX obrigatório** (conta bancária não é
-  aceita). Vínculo, referências, naturalidade e `assinatura.*` não são
-  exigidos. Ver [Matriz de exigência](/#matriz-de-exigência-por-banco).
+  aceita). Vínculo, referências, naturalidade e `assinatura.tipo_envio` não
+  são exigidos (o bloco `assinatura` com `ip` continua obrigatório no
+  request, como em todo banco). Ver
+  [Matriz de exigência](/#matriz-de-exigência-por-banco).
 
   ### V8 — link de formalização já no submit e `awaiting_signature` no status
 

@@ -1096,14 +1096,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"v8\",\n    \"offer_id\": \"<offer_id da consulta do CPF 80011122250>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"800.111.222-50\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"SOLTEIRO\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"80011122250\"\n    }\n  }\n}",
+              "raw": "{\n  \"offer_ref\": {\n    \"provider\": \"v8\",\n    \"offer_id\": \"<offer_id da consulta do CPF 80011122250>\"\n  },\n  \"titular\": {\n    \"nome\": \"JOAO DE EXEMPLO SANDBOX\",\n    \"cpf\": \"800.111.222-50\",\n    \"data_nascimento\": \"1985-03-20\",\n    \"sexo\": \"M\",\n    \"nome_mae\": \"MARIA DE EXEMPLO SANDBOX\",\n    \"nacionalidade\": \"BRASILEIRA\",\n    \"estado_civil\": \"SOLTEIRO\",\n    \"exposicao_politica\": \"NAO\"\n  },\n  \"documento\": {\n    \"numero\": \"987654321\",\n    \"orgao_emissor\": \"SSP\",\n    \"uf_emissor\": \"SP\",\n    \"data_emissao\": \"2005-01-01\"\n  },\n  \"contato\": {\n    \"telefone\": \"11987654322\",\n    \"email\": \"joao@exemplo.com\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310-100\",\n    \"logradouro\": \"AV PAULISTA\",\n    \"numero\": \"2000\",\n    \"bairro\": \"BELA VISTA\",\n    \"cidade\": \"SAO PAULO\",\n    \"uf\": \"SP\"\n  },\n  \"recebimento\": {\n    \"pix\": {\n      \"tipo_chave\": \"cpf\",\n      \"chave\": \"80011122250\"\n    }\n  },\n  \"assinatura\": {\n    \"ip\": \"203.0.113.10\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "Submit V8 (Crédito Privado CLT): desembolso só por PIX (`recebimento.pix`; conta bancária devolve 422), RG real em `documento.numero`, sem `vinculo`/`referencias`/`assinatura`. O link de formalização vem NA RESPOSTA (`status: awaiting_signature`, `action.url`, `provider_data.formalization_url`). No sandbox, consulte antes o CPF 80011122250 e use o `offerId` retornado."
+            "description": "Submit V8 (Crédito Privado CLT): desembolso só por PIX (`recebimento.pix`; conta bancária devolve 422), RG real em `documento.numero`, sem `vinculo`/`referencias`; o bloco `assinatura` com `ip` continua obrigatório (a V8 não usa `tipo_envio`). O link de formalização vem NA RESPOSTA (`status: awaiting_signature`, `action.url`, `provider_data.formalization_url`). No sandbox, consulte antes o CPF 80011122250 e use o `offerId` retornado."
           },
           "response": [
             {
