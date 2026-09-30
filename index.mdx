@@ -903,8 +903,10 @@ bancos — a V8 só não usa `tipo_envio`.
   `client_ip`) — nada a fazer do seu lado. A margem chega em segundos, por
   webhook da V8: a consulta aguarda até 15 s e, se não chegar, devolve o
   banco em `pending` com o motivo `V8: consentimento aceito — consultando
-  margem` — **consulte novamente** o CPF (não há webhook `authorization_result`
-  para a V8). O consentimento vale 30 dias.
+  margem`. O desfecho chega pelo webhook [`authorization_result`](#webhooks):
+  `approved` **já com as ofertas** (com `offerId`, prontas para o submit) ou
+  `denied` com o motivo (`authorization.method: "consent"`). Sem webhook
+  configurado, consulte novamente o CPF. O consentimento vale 30 dias.
 
   Na contratação, o link de formalização vem **na resposta do submit**:
   `status: "awaiting_signature"`, `action.url` e
@@ -1339,9 +1341,10 @@ webhook, na URL configurada no cadastro do seu parceiro.
 <Note>
   A configuração de webhook (URL + secret) já faz parte do cadastro do parceiro.
   O evento `authorization_result` é enviado pelo **C6** (pós-biometria, com as
-  ofertas), pelo **Banco PAN** (pós-WhatsApp) e pela **Crefaz** (pós-SMS do
-  DataPrev). Para PAN e Crefaz as ofertas **não** vêm no webhook: consulte o
-  CPF novamente.
+  ofertas), pelo **Banco PAN** (pós-WhatsApp), pela **Crefaz** (pós-SMS do
+  DataPrev) e pela **V8** (consulta de margem concluída, com as ofertas).
+  Para PAN e Crefaz as ofertas **não** vêm no webhook: consulte o CPF
+  novamente.
 </Note>
 
 ### Payload
@@ -1381,8 +1384,10 @@ depois da autorização:
 }
 ```
 
-`authorization.method` é `"whatsapp"` no PAN e `"dataprev_sms"` na Crefaz. Ao
-receber `denied`, pare de enviar o cliente ao link daquele banco. No PAN a
+`authorization.method` é `"whatsapp"` no PAN, `"dataprev_sms"` na Crefaz e
+`"consent"` na V8 (recusa do motor, margem insuficiente ou perfil fora do
+corte — não há link para reenviar). Ao receber `denied`, pare de enviar o
+cliente ao link daquele banco. No PAN a
 consulta devolve o banco sem `action` por 24h (`Banco PAN: cliente inelegível
 ao empréstimo (recusa do banco)`); na Crefaz, enquanto a proposta estiver
 negada (`Crefaz: proposta negada pelo banco`).

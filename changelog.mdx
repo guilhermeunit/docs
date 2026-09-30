@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="30 de setembro de 2026" description="V8: webhook authorization_result com as ofertas">
+  ### V8 — desfecho da consulta de margem chega por webhook
+
+  A V8 passa a enviar `authorization_result` quando a consulta de margem
+  termina: `status: "approved"` com as ofertas (já com `offerId`) quando há
+  margem, ou `status: "denied"` com `authorization.reason` quando não há
+  margem, o perfil está fora do corte ou o motor de crédito recusou
+  (`authorization.method: "consent"`). Um aviso por consulta. Até aqui a
+  V8 era o único banco assíncrono sem webhook: o parceiro só descobria o
+  resultado re-consultando. Ver [Webhooks](/#webhooks).
+</Update>
+
 <Update label="30 de setembro de 2026" description="V8 na formalização: matriz, link no submit, status e sandbox">
   ### V8 — documentação da contratação
 
