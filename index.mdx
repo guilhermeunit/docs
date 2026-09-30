@@ -529,13 +529,19 @@ do titular:
 | Zipdin | Via API | evidência enviada na chamada |
 | Facta | Via API | autorização automática via DATAPREV; raramente pode exigir confirmação adicional por SMS/WhatsApp |
 | C6 | Externa | biometria/prova de vida — o cliente completa por um link, resultado assíncrono |
-| Banco PAN | Externa | autorização via WhatsApp, sempre assíncrona |
+| Banco PAN | Externa | autorização via WhatsApp (link em `action`), sempre assíncrona — desfecho por webhook |
+| Crefaz | Externa | SMS do DataPrev, **disparado por você** em `POST /partners/v1/providers/crefaz/authorize` — desfecho por webhook |
 
-<Warning>
-  Banco PAN ainda não faz parte do fluxo automatizado da API de Parceiros — está
-  em desenvolvimento. Ele aparece nesta tabela pelo modelo de autorização, mas
-  hoje não retorna oferta nem ação pendente por esta API.
-</Warning>
+<Note>
+  **Banco PAN e Crefaz — a autorização vem antes da oferta.** Nos dois, a
+  consulta devolve o banco **sem oferta** e com `action` pendente. No PAN o
+  `action` traz o link do WhatsApp para o cliente; na Crefaz o `action` vem
+  **sem URL** (`type: "dataprev"`): o SMS só sai quando você chama a rota de
+  disparo (ver [Autorização externa: Crefaz](#autorização-externa-crefaz)).
+  Em ambos, o desfecho chega pelo webhook [`authorization_result`](#webhooks)
+  — autorizado **ou recusado** — e, se autorizado, as ofertas aparecem numa
+  nova consulta do mesmo CPF.
+</Note>
 
 <Note>
   **C6 — a biometria vem antes da oferta.** Diferente dos outros bancos, o C6 só
@@ -614,6 +620,55 @@ curl -X POST "https://api.somosunit.com.br/partners/v1/authorizations" \
   `POST /partners/v1/authorizations/public/{authorization_id}/accept`
   diretamente com uma evidência de teste. A collection do Postman tem a pasta
   **"Autorização — colheita de evidência"** com os 5 passos prontos.
+</Note>
+
+## Autorização externa: Crefaz
+
+Depois da consulta, a Crefaz fica em `requires_action` com `action.type:
+"dataprev"` e sem URL. O SMS de autorização do DataPrev **não sai sozinho**:
+dispare quando o cliente estiver com o celular em mãos.
+
+```bash
+curl -X POST "https://api.somosunit.com.br/partners/v1/providers/crefaz/authorize" \
+  -H "X-Partner-Api-Key: au_xxxxxxxx" -H "Content-Type: application/json" \
+  -d '{"cpf": "12345678901", "telefone": "27999990000"}'
+```
+
+`telefone` é opcional; se omitido, vale o telefone enviado na consulta.
+
+```json
+{ "provider": "crefaz", "status": "enviado", "cooldown_s": 45 }
+```
+
+| Resposta | Significado | O que fazer |
+|---|---|---|
+| `200` · `status: "enviado"` | a Crefaz aceitou o pedido; o SMS sai em seguida | aguardar o webhook `authorization_result` |
+| `200` · `status: "aguardando"` | já autorizado, já em processamento ou limite de disparos atingido | não reenviar |
+| `200` · `status: "cooldown"` | novo disparo só após `cooldown_s` segundos | aguardar |
+| `404` · `not_found` | não há consulta sua para esse CPF | consultar antes |
+| `403` | Crefaz fora do seu contrato ou indisponível | — |
+| `422` · `invalid_input` | a pré-análise da Crefaz ainda não terminou | tentar de novo em instantes |
+| `502` · `provider_error` | a Crefaz recusou o pedido | tentar de novo |
+
+<Warning>
+  Há **um disparo por proposta**. Um segundo pedido devolve `aguardando` sem
+  enviar novo SMS. Avise o cliente antes de chamar a rota.
+</Warning>
+
+Quando o cliente conclui, você recebe o webhook `authorization_result` com
+`provider: "crefaz"`:
+
+- **autorizado** — `status: "approved"`, `authorization.status: "authorized"`.
+  Consulte novamente o CPF para receber a oferta e o `offerId`.
+- **recusado** — `status: "denied"`, `authorization: {status: "denied",
+  method: "dataprev_sms", reason: "<motivo do banco>"}`. O cliente autorizou,
+  mas o motor de crédito da Crefaz negou (ex.: `Empresa não elegível para a
+  liberação`). Não repita a consulta nem o disparo: a consulta passa a devolver
+  `Crefaz: proposta negada pelo banco`.
+
+<Note>
+  **No sandbox** a rota responde `enviado` sem enviar SMS. O CPF `30055577741`
+  simula a Crefaz aguardando a autorização (`requires_action` sem URL).
 </Note>
 
 ## Formalizando uma proposta
@@ -1249,9 +1304,10 @@ webhook, na URL configurada no cadastro do seu parceiro.
 
 <Note>
   A configuração de webhook (URL + secret) já faz parte do cadastro do parceiro.
-  O evento `authorization_result` do **C6** (pós-biometria) já está **no ar**:
-  quando o cliente conclui a prova de vida, a Unit envia o webhook com as ofertas
-  do C6. O Banco PAN segue a mesma forma quando entrar no fluxo automatizado.
+  O evento `authorization_result` é enviado pelo **C6** (pós-biometria, com as
+  ofertas), pelo **Banco PAN** (pós-WhatsApp) e pela **Crefaz** (pós-SMS do
+  DataPrev). Para PAN e Crefaz as ofertas **não** vêm no webhook: consulte o
+  CPF novamente.
 </Note>
 
 ### Payload
@@ -1267,6 +1323,35 @@ webhook, na URL configurada no cadastro do seu parceiro.
   "timestamp": "2026-07-01T14:32:00Z"
 }
 ```
+
+### Recusa
+
+O `authorization_result` tem dois desfechos. Além do `status: "approved"`
+acima, **Banco PAN e Crefaz** enviam a recusa quando o banco nega o cliente
+depois da autorização:
+
+```json
+{
+  "partner_id": "sua-empresa",
+  "external_reference": "12345678900",
+  "provider": "crefaz",
+  "event": "authorization_result",
+  "status": "denied",
+  "authorization": {
+    "status": "denied",
+    "method": "dataprev_sms",
+    "reason": "Empresa não elegível para a liberação"
+  },
+  "offers": [],
+  "timestamp": "2026-09-30T14:32:00Z"
+}
+```
+
+`authorization.method` é `"whatsapp"` no PAN e `"dataprev_sms"` na Crefaz. Ao
+receber `denied`, pare de enviar o cliente ao link daquele banco. No PAN a
+consulta devolve o banco sem `action` por 24h (`Banco PAN: cliente inelegível
+ao empréstimo (recusa do banco)`); na Crefaz, enquanto a proposta estiver
+negada (`Crefaz: proposta negada pelo banco`).
 
 ### Verificando a assinatura
 

@@ -661,6 +661,47 @@
       ]
     },
     {
+      "name": "Autorização externa — Crefaz (SMS DataPrev)",
+      "item": [
+        {
+          "name": "POST /partners/v1/providers/crefaz/authorize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partners/v1/providers/crefaz/authorize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partners",
+                "v1",
+                "providers",
+                "crefaz",
+                "authorize"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"30055577741\",\n  \"telefone\": \"11988887777\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Dispara o SMS de autorização do DataPrev da proposta Crefaz do CPF (exige consulta prévia do mesmo CPF pelo parceiro). `telefone` é opcional. Respostas: `enviado` (SMS a caminho), `aguardando` (já autorizado, em processamento ou teto de 1 disparo atingido), `cooldown`. No sandbox responde `enviado` sem efeito externo; o CPF 30055577741 simula a Crefaz aguardando a autorização."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Formalização (submit / formalize / status / cancel)",
       "description": "Endpoint unificado de formalização (§8.1 do guia) — mesmo schema por trás de Zipdin/Unit/C6/Facta. Exemplos abaixo usam o CPF `99922255561` do catálogo do sandbox (Facta: fluxo completo submit→formalize→paga→cancelada).",
       "item": [

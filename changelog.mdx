@@ -3,6 +3,25 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="30 de setembro de 2026" description="Disparo da autorização da Crefaz pelo parceiro; recusa da Crefaz no webhook">
+  ### Crefaz — nova rota para disparar o SMS do DataPrev
+
+  `POST /partners/v1/providers/crefaz/authorize` com `{cpf, telefone?}`
+  dispara o SMS de autorização da proposta Crefaz do CPF. Até aqui o SMS só
+  saía pelo funil da Unit, e a Crefaz ficava em "aguardando autorização" para
+  toda consulta feita pela API. Um disparo por proposta; respostas `enviado`,
+  `aguardando` e `cooldown`. Ver
+  [Autorização externa: Crefaz](/#autorização-externa-crefaz).
+
+  ### Crefaz — recusa chega pelo `authorization_result`
+
+  Quando o cliente autoriza e o motor de crédito da Crefaz nega em seguida,
+  você recebe `authorization_result` com `status: "denied"` e
+  `authorization.reason` com o motivo do banco, no mesmo formato da recusa do
+  Banco PAN. A consulta passa a devolver `Crefaz: proposta negada pelo banco`
+  em vez de "aguardando autorização". Ver [Recusa](/#recusa).
+</Update>
+
 <Update label="28 de setembro de 2026" description="Resolução de pendências de formalização (V8)">
   ### Pendências de formalização — novas rotas
 
