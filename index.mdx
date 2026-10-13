@@ -1271,6 +1271,15 @@ banco de verdade e não usa dados reais.
   fixa (pública, pode usar livremente): `au_sandbox00000000000000000000000`.
 </Note>
 
+<Tip>
+  **Webhooks no sandbox.** A chave pública é compartilhada entre todos os
+  parceiros em homologação, então ela tem um único `webhook_url`. Para receber
+  os webhooks do sandbox na sua própria URL, peça à Unit uma **chave de sandbox
+  dedicada**: ela tem `webhook_url` e secret exclusivos (o secret pode ser o
+  que você gerar) e responde exatamente como a chave pública, com o mesmo
+  catálogo de CPFs e cenários.
+</Tip>
+
 ### CPFs de teste — catálogo de cenários
 
 | CPF | Cenário |

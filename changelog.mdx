@@ -3,6 +3,17 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="13 de outubro de 2026" description="Sandbox: chave dedicada por parceiro, com webhook próprio">
+  ### Sandbox — chave dedicada com webhook isolado
+
+  A chave pública do sandbox é compartilhada e por isso só tem um
+  `webhook_url`. Agora a Unit pode emitir uma **chave de sandbox dedicada**
+  para o seu parceiro: `webhook_url` e secret próprios (inclusive um secret
+  gerado por você), mesmo catálogo de CPFs e cenários, mesmas rotas. Peça a
+  chave ao seu contato na Unit. Veja a nota em [Sandbox de
+  Homologação](/#sandbox-de-homologação).
+</Update>
+
 <Update label="30 de setembro de 2026" description="V8: webhook authorization_result com as ofertas">
   ### V8 — desfecho da consulta de margem chega por webhook
 
