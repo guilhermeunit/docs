@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="13 de outubro de 2026" description="exposicao_politica: valores padronizados e correção na Crefaz">
+  ### `titular.exposicao_politica` — leitura única em todos os bancos
+
+  O campo passa a aceitar `exposed` ou `not_exposed` (com `sim`/`nao`,
+  `true`/`false`, `1`/`0` como sinônimos, sem distinção de caixa). Ausente
+  ou vazio vale `not_exposed`. Texto fora dessa lista volta `422
+  invalid_input` com `field: "titular.exposicao_politica"`. Correção: na
+  Crefaz, qualquer texto não vazio (inclusive `"nao"`) era enviado como
+  pessoa politicamente exposta. Facta, Zipdin, C6 e Banco PAN não usam o
+  campo.
+</Update>
+
 <Update label="13 de outubro de 2026" description="Sandbox: chave dedicada por parceiro, com webhook próprio">
   ### Sandbox — chave dedicada com webhook isolado
 

@@ -786,6 +786,12 @@ campo(s) faltando, antes de qualquer chamada ao banco.
   `naturalidade_cidade`, `naturalidade_uf`, `exposicao_politica`.
   `nacionalidade` e `naturalidade_cidade` vão **por extenso** ("Brasileira",
   "São Paulo") — a API traduz para o código exigido por cada banco.
+  **`exposicao_politica`** (pessoa politicamente exposta): envie `exposed` ou
+  `not_exposed`; `sim`/`nao`, `true`/`false`, `1`/`0` são aceitos como
+  sinônimos, sem distinção de caixa. **Ausente ou vazio vale `not_exposed`.**
+  Qualquer outro texto volta `422 invalid_input` com
+  `field: "titular.exposicao_politica"`. A API traduz para o formato de cada
+  banco; Facta, Zipdin, C6 e Banco PAN não usam o campo.
   `nacionalidade` é **case-insensitive e tolerante**: `br`, `BR`,
   `Brasileiro`, `Brasileira` ou vazio são todos tratados como brasileiro em
   todos os bancos; só texto contendo "estrangeir" é tratado como estrangeiro.
@@ -851,6 +857,7 @@ chamada externa.
 | `titular.estado_civil` | obrigatório | obrigatório | — | obrigatório | — | obrigatório | obrigatório |
 | `titular.nome_mae` | obrigatório | obrigatório | — | obrigatório | obrigatório | — | obrigatório |
 | `titular.nome_pai` / naturalidade | opcional | — | — | obrigatório | naturalidade obrigatória | — | — |
+| `titular.exposicao_politica` | — | opcional (`exposed`/`not_exposed`) | — | — | opcional | — | opcional |
 | `vinculo` | obrigatório² | opcional | — | obrigatório (CNPJ + admissão + renda) | opcional | obrigatório (matrícula) | — |
 | `titular.sexo` | obrigatório | opcional | — | obrigatório | obrigatório | obrigatório | obrigatório |
 | `assinatura.ip` | — | obrigatório | — | — | — | — | — |
