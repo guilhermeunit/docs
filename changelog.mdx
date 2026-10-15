@@ -3,6 +3,17 @@ title: "Changelog"
 description: "Novidades e mudanças na API de Parceiros da Unit"
 ---
 
+<Update label="15 de outubro de 2026" description="Consulta: tempo máximo por banco (opcional)">
+  ### `provider_timeout_s` na consulta agregada
+
+  Novo campo opcional no corpo de `POST /partners/v1/consultas`: tempo
+  máximo por banco, de 10 a 240 segundos. O banco que estourar volta em
+  `providerResults` com `success: false` e erro de timeout, e os demais bancos
+  respondem normalmente, sem esperar o mais lento. Sem o campo, nada muda: a
+  consulta segue esperando todos os bancos. Use um valor alguns segundos
+  abaixo do timeout do seu cliente HTTP.
+</Update>
+
 <Update label="13 de outubro de 2026" description="exposicao_politica: valores padronizados e correção na Crefaz">
   ### `titular.exposicao_politica` — leitura única em todos os bancos
 

@@ -254,6 +254,15 @@ curl -X POST https://api.somosunit.com.br/partners/v1/providers/c6/consultas \
   Inclui as opções com seguro na simulação.
 </ParamField>
 
+<ParamField body="provider_timeout_s" type="integer">
+  Tempo máximo por banco, em segundos (10 a 240). O banco que não responder
+  nesse tempo volta em `providerResults` com `success: false` e
+  `error: "Timeout: <banco> não respondeu em Ns — tente novamente"`, sem segurar
+  os demais. **Ausente: a consulta espera todos os bancos**, como sempre.
+  Recomendado: alguns segundos abaixo do timeout do seu cliente HTTP (cliente
+  com 90s → `80`). Só na rota agregada `POST /partners/v1/consultas`.
+</ParamField>
+
 ### Resposta — consulta agregada
 
 A rota agregada devolve, numa resposta só, as ofertas achatadas (ordenadas por
